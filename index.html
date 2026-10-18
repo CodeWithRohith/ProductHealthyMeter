@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingredient Scanner & Health Scale</title>
+  <!-- Tesseract.js for In-Browser OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --good: #16a34a;
+      --caution: #d97706;
+      --bad: #dc2626;
+      --neutral: #64748b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; line-height: 1.5; }
+    .container { max-width: 760px; margin: 0 auto; }
+    
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #1e293b; }
+    header p { color: #64748b; font-size: 1rem; }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Upload Area */
+    .dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #f1f5f9;
+    }
+    .dropzone:hover { border-color: var(--primary); background: #eff6ff; }
+    .dropzone input { display: none; }
+    .dropzone svg { width: 44px; height: 44px; fill: #64748b; margin-bottom: 0.5rem; }
+
+    /* Thumbnails */
+    .thumbnails { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+    .thumb-item {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+    .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(220, 38, 38, 0.85);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Actions */
+    .btn {
+      width: 100%;
+      padding: 0.85rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 1rem;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* Progress bar */
+    .progress-box { margin-top: 1rem; display: none; }
+    .progress-bar-bg { background: #e2e8f0; height: 10px; border-radius: 6px; overflow: hidden; }
+    .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.2s; }
+    .progress-text { font-size: 0.85rem; color: #64748b; margin-top: 0.4rem; text-align: center; }
+
+    /* Text review */
+    textarea {
+      width: 100%;
+      height: 110px;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.95rem;
+      resize: vertical;
+      margin-top: 0.5rem;
+    }
+
+    /* Score Scale & Meter */
+    .score-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .score-bubble {
+      min-width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .score-bubble .num { font-size: 2rem; line-height: 1; }
+    .score-bubble .sub { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; opacity: 0.9; }
+
+    .meter-bar-container { flex: 1; min-width: 200px; }
+    .meter-track { height: 16px; border-radius: 8px; background: #e2e8f0; overflow: hidden; display: flex; }
+    .meter-fill { height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+
+    /* Badges / Lists */
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin: 3px;
+    }
+    .badge-bad { background: #fee2e2; color: var(--bad); border: 1px solid #fecaca; }
+    .badge-caution { background: #fef3c7; color: var(--caution); border: 1px solid #fde68a; }
+    .badge-good { background: #dcfce7; color: var(--good); border: 1px solid #bbf7d0; }
+    .badge-neutral { background: #f1f5f9; color: var(--neutral); border: 1px solid #e2e8f0; }
+
+    .ingredient-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .ingredient-table th, .ingredient-table td { padding: 0.6rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid #e2e8f0; }
+    .ingredient-table th { background: #f8fafc; color: #475569; }
+
+    #resultsSection { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Product Ingredient Scanner</h1>
+    <p>Upload 1 or more photos of the label to grade product safety.</p>
+  </header>
+
+  <!-- Upload Section -->
+  <div class="card">
+    <label class="dropzone" id="dropArea">
+      <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+      <p><strong>Click to browse or take photo(s)</strong></p>
+      <p style="font-size: 0.8rem; color: #64748b;">(You can choose multiple photos if the list wraps around)</p>
+      <input type="file" id="fileInput" accept="image/*" multiple />
+    </label>
+
+    <div class="thumbnails" id="thumbContainer"></div>
+
+    <div class="progress-box" id="progressBox">
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-text" id="progressText">Initializing scan...</div>
+    </div>
+
+    <button class="btn btn-primary" id="scanBtn" disabled>Scan Selected Images</button>
+  </div>
+
+  <!-- Editable Extracted Text -->
+  <div class="card" id="textCard" style="display:none;">
+    <h3 style="font-size: 1.1rem; margin-bottom: 0.3rem;">Extracted Ingredient Text</h3>
+    <p style="font-size: 0.85rem; color: #64748b;">Review or fix any misspelled words below, then hit "Analyze":</p>
+    <textarea id="rawText"></textarea>
+    <button class="btn btn-primary" style="background:#0f172a;" id="analyzeBtn">Re-Analyze Ingredients</button>
+  </div>
+
+  <!-- Scoring & Breakdown Results -->
+  <div class="card" id="resultsSection">
+    <div class="score-container">
+      <div class="score-bubble" id="scoreBadge">
+        <span class="num" id="scoreNum">--</span>
+        <span class="sub" id="scoreGrade">/ 10</span>
+      </div>
+      <div class="meter-bar-container">
+        <h2 id="scaleVerdict" style="margin-bottom: 0.3rem;">Analysis</h2>
+        <p id="scaleDescription" style="font-size: 0.85rem; color:#64748b; margin-bottom: 0.5rem;"></p>
+        <div class="meter-track">
+          <div class="meter-fill" id="meterFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 1rem; margin-top: 1rem;">Detected Ingredients Breakdown</h3>
+    <table class="ingredient-table">
+      <thead>
+        <tr>
+          <th>Ingredient</th>
+          <th>Rating</th>
+          <th>Notes / Reason</th>
+        </tr>
+      </thead>
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Ingredient Knowledge Base (Harmful, Caution, Good)
+  const DB = {
+    bad: [
+      { name: "high fructose corn syrup", reason: "Linked to obesity, fatty liver, and metabolic issues" },
+      { name: "partially hydrogenated", reason: "Contains industrial trans fats" },
+      { name: "hydrogenated oil", reason: "Source of trans-fats; raises LDL cholesterol" },
+      { name: "titanium dioxide", reason: "Genotoxicity concerns (banned as food additive in the EU)" },
+      { name: "bha", reason: "Synthetic preservative classified as possible human carcinogen" },
+      { name: "bht", reason: "Potential endocrine disruptor and synthetic preservative" },
+      { name: "potassium bromate", reason: "Possible human carcinogen; banned in multiple countries" },
+      { name: "sodium nitrite", reason: "Can form carcinogenic nitrosamines in the stomach" },
+      { name: "sodium nitrate", reason: "Preservative associated with cardiovascular risks" },
+      { name: "red 40", reason: "Artificial food dye linked to hyperactivity and sensitivities" },
+      { name: "yellow 5", reason: "Tartrazine; artificial food dye linked to allergic reactions" },
+      { name: "yellow 6", reason: "Artificial food dye with suspected contaminants" },
+      { name: "blue 1", reason: "Synthetic colorant linked to hypersensitivity" },
+      { name: "paraben", reason: "Preservative family linked to endocrine/hormonal disruption" },
+      { name: "methylparaben", reason: "Potential endocrine disruptor" },
+      { name: "propylparaben", reason: "Endocrine disruptor concern" },
+      { name: "phthalate", reason: "Endocrine disruptor found in synthetic fragrances" },
+      { name: "sodium lauryl sulfate", reason: "Harsh surfactant, can cause skin/scalp irritation" },
+      { name: "aspartame", reason: "Artificial sweetener classified as possibly carcinogenic (WHO/IARC 2B)" }
+    ],
+    caution: [
+      { name: "palm oil", reason: "High in saturated fat; major environmental concerns" },
+      { name: "canola oil", reason: "Highly processed, refined vegetable oil" },
+      { name: "soybean oil", reason: "High omega-6 to omega-3 ratio, highly processed" },
+      { name: "carrageenan", reason: "Thickener that may cause gastrointestinal inflammation in some" },
+      { name: "maltodextrin", reason: "Very high glycemic index, spikes blood sugar" },
+      { name: "natural flavor", reason: "Broad proprietary term; origin not always transparent" },
+      { name: "artificial flavor", reason: "Synthetic chemical compound flavoring" },
+      { name: "fragrance", reason: "Can hide dozens of undisclosed synthetic chemicals" },
+      { name: "parfum", reason: "Undisclosed fragrance blend" },
+      { name: "sucralose", reason: "Artificial sweetener; may impact gut microbiome" },
+      { name: "sodium benzoate", reason: "Can form benzene in presence of vitamin C" },
+      { name: "citric acid", reason: "Often manufactured using Aspergillus niger mold" }
+    ],
+    good: [
+      { name: "water", reason: "Essential clean solvent / base" },
+      { name: "aqua", reason: "Purified water base" },
+      { name: "olive oil", reason: "Rich in healthy monounsaturated fats & polyphenols" },
+      { name: "extra virgin olive oil", reason: "Unrefined antioxidant-rich oil" },
+      { name: "coconut oil", reason: "Natural source of medium-chain triglycerides (MCTs)" },
+      { name: "shea butter", reason: "Clean, natural nourishing moisturizer" },
+      { name: "aloe vera", reason: "Natural soothing, anti-inflammatory plant extract" },
+      { name: "green tea", reason: "High in EGCG and protective antioxidants" },
+      { name: "oats", reason: "High in soluble beta-glucan fiber" },
+      { name: "chia", reason: "Rich in omega-3 and dietary fiber" },
+      { name: "flaxseed", reason: "Excellent source of ALA omega-3 and lignans" },
+      { name: "probiotics", reason: "Beneficial for gut microbiota balance" },
+      { name: "tocopherol", reason: "Natural Vitamin E antioxidant" }
+    ]
+  };
+
+  let filesList = [];
+  const fileInput = document.getElementById('fileInput');
+  const thumbContainer = document.getElementById('thumbContainer');
+  const scanBtn = document.getElementById('scanBtn');
+  const progressBox = document.getElementById('progressBox');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const textCard = document.getElementById('textCard');
+  const rawTextArea = document.getElementById('rawText');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+
+  // File selection handling
+  fileInput.addEventListener('change', (e) => {
+    const selected = Array.from(e.target.files);
+    filesList = filesList.concat(selected);
+    renderThumbs();
+  });
+
+  function renderThumbs() {
+    thumbContainer.innerHTML = '';
+    filesList.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'thumb-item';
+      
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'thumb-remove';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        filesList.splice(index, 1);
+        renderThumbs();
+      };
+
+      item.appendChild(img);
+      item.appendChild(removeBtn);
+      thumbContainer.appendChild(item);
+    });
+    scanBtn.disabled = filesList.length === 0;
+  }
+
+  // Scan multiple files via Tesseract
+  scanBtn.addEventListener('click', async () => {
+    if (filesList.length === 0) return;
+
+    scanBtn.disabled = true;
+    progressBox.style.display = 'block';
+    let combinedText = "";
+
+    try {
+      for (let i = 0; i < filesList.length; i++) {
+        const file = filesList[i];
+        const label = `Scanning photo ${i + 1} of ${filesList.length}...`;
+        progressText.innerText = label;
+
+        const result = await Tesseract.recognize(
+          file,
+          'eng',
+          {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                const subProgress = Math.round(m.progress * 100);
+                const overall = Math.round(((i + m.progress) / filesList.length) * 100);
+                progressBar.style.width = overall + '%';
+                progressText.innerText = `${label} (${subProgress}%)`;
+              }
+            }
+          }
+        );
+        combinedText += "\n" + result.data.text;
+      }
+
+      progressBar.style.width = '100%';
+      progressText.innerText = "Scan complete!";
+
+      // Clean raw text
+      combinedText = cleanOCRText(combinedText);
+      rawTextArea.value = combinedText;
+      textCard.style.display = 'block';
+
+      // Perform analysis
+      evaluateIngredients(combinedText);
+    } catch (err) {
+      alert("Error reading images: " + err.message);
+    } finally {
+      scanBtn.disabled = false;
+      setTimeout(() => { progressBox.style.display = 'none'; }, 1000);
+    }
+  });
+
+  analyzeBtn.addEventListener('click', () => {
+    evaluateIngredients(rawTextArea.value);
+  });
+
+  function cleanOCRText(text) {
+    return text
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/^.*?ingredients:?/i, '') // remove prefix before ingredients
+      .trim();
+  }
+
+  // Parsing & Evaluation Logic
+  function evaluateIngredients(fullText) {
+    if (!fullText.trim()) return;
+
+    // Split text by commas, semicolons, or periods
+    const rawTokens = fullText.split(/[,;•\n\.]+/);
+    const parsedList = rawTokens
+      .map(item => item.replace(/[\(\)\[\]\{\}]/g, '').trim())
+      .filter(item => item.length > 1 && item.length < 50);
+
+    let badFound = [];
+    let cautionFound = [];
+    let goodFound = [];
+    let neutralFound = [];
+
+    parsedList.forEach(rawItem => {
+      const lower = rawItem.toLowerCase();
+      let matched = false;
+
+      // Check Bad
+      for (const item of DB.bad) {
+        if (lower.includes(item.name)) {
+          badFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'bad' });
+          matched = true;
+          break;
+        }
+      }
+      if (matched) return;
+
+      // Check Caution
+      for (const item of DB.caution) {
+        if (lower.includes(item.name)) {
+          cautionFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'caution' });
+          matched = true;
+          break;
+        }
+      }
+      if (matched) return;
+
+      // Check Good
+      for (const item of DB.good) {
+        if (lower.includes(item.name)) {
+          goodFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'good' });
+          matched = true;
+          break;
+        }
+      }
+      if (matched) return;
+
+      // Otherwise Neutral
+      neutralFound.push({ name: rawItem, rule: 'Standard', reason: 'Generally recognized / unflagged', type: 'neutral' });
+    });
+
+    // Score Calculation (Scale of 1 - 10 and 0 - 100%)
+    // Base score is 100: Bad deducts 20, Caution deducts 7, Good adds 4
+    let score = 85; 
+    score -= (badFound.length * 20);
+    score -= (cautionFound.length * 8);
+    score += (goodFound.length * 4);
+
+    if (score > 100) score = 100;
+    if (score < 10) score = 10;
+
+    const scale10 = (score / 10).toFixed(1);
+
+    renderScoreDashboard(scale10, score, badFound, cautionFound, goodFound, neutralFound);
+  }
+
+  function renderScoreDashboard(scale10, percentage, bad, caution, good, neutral) {
+    const results = document.getElementById('resultsSection');
+    const scoreNum = document.getElementById('scoreNum');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const scaleVerdict = document.getElementById('scaleVerdict');
+    const scaleDesc = document.getElementById('scaleDescription');
+    const meterFill = document.getElementById('meterFill');
+    const tableBody = document.getElementById('breakdownBody');
+
+    results.style.display = 'block';
+    scoreNum.innerText = scale10;
+    meterFill.style.width = percentage + '%';
+
+    let color = 'var(--good)';
+    let verdict = "Excellent & Clean";
+    let desc = "Few to no harmful additives found. Mostly clean or wholesome ingredients.";
+
+    if (percentage < 45) {
+      color = 'var(--bad)';
+      verdict = "Poor / High Risk";
+      desc = "Contains known high-risk additives, artificial colorants, or harmful preservatives.";
+    } else if (percentage < 75) {
+      color = 'var(--caution)';
+      verdict = "Moderate / Use Caution";
+      desc = "Contains refined ingredients, processed fillers, or potential irritants.";
+    }
+
+    scoreBadge.style.backgroundColor = color;
+    meterFill.style.backgroundColor = color;
+    scaleVerdict.innerText = `${verdict} (${percentage}/100)`;
+    scaleVerdict.style.color = color;
+    scaleDesc.innerText = desc;
+
+    // Populate Table
+    tableBody.innerHTML = '';
+    const allMatches = [...bad, ...caution, ...good, ...neutral];
+
+    if (allMatches.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">No ingredients recognized. Try adjusting your text above.</td></tr>`;
+      return;
+    }
+
+    allMatches.forEach(item => {
+      const row = document.createElement('tr');
+      let badgeClass = 'badge-neutral';
+      let label = 'Neutral';
+
+      if (item.type === 'bad') { badgeClass = 'badge-bad'; label = 'Avoid / Bad'; }
+      if (item.type === 'caution') { badgeClass = 'badge-caution'; label = 'Caution'; }
+      if (item.type === 'good') { badgeClass = 'badge-good'; label = 'Good'; }
+
+      row.innerHTML = `
+        <td><strong>${escapeHtml(item.name)}</strong></td>
+        <td><span class="badge ${badgeClass}">${label}</span></td>
+        <td style="color:#64748b;">${escapeHtml(item.reason)}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    results.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>'"]/g, 
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  }
+</script>
+</body>
+</html>
