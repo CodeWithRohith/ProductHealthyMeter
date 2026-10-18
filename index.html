@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingredient Scanner & Health Scale</title>
-  <!-- Tesseract.js for In-Browser OCR -->
+  <title>Weight-Loss & Ingredient Health Scanner</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -12,167 +11,113 @@
       --good: #16a34a;
       --caution: #d97706;
       --bad: #dc2626;
-      --neutral: #64748b;
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #0f172a;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; line-height: 1.5; }
-    .container { max-width: 760px; margin: 0 auto; }
-    
+    .container { max-width: 780px; margin: 0 auto; }
     header { text-align: center; margin-bottom: 2rem; }
-    header h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #1e293b; }
-    header p { color: #64748b; font-size: 1rem; }
+    header h1 { font-size: 1.85rem; color: #0f172a; }
+    header p { color: #64748b; font-size: 0.95rem; margin-top: 0.3rem; }
 
     .card {
       background: var(--card);
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
     }
-
-    /* Upload Area */
     .dropzone {
       border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 2rem 1rem;
+      border-radius: 10px;
+      padding: 1.75rem 1rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s ease;
+      display: block;
       background: #f1f5f9;
+      transition: 0.2s;
     }
     .dropzone:hover { border-color: var(--primary); background: #eff6ff; }
     .dropzone input { display: none; }
-    .dropzone svg { width: 44px; height: 44px; fill: #64748b; margin-bottom: 0.5rem; }
-
-    /* Thumbnails */
     .thumbnails { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
     .thumb-item {
       position: relative;
-      width: 80px;
-      height: 80px;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #cbd5e1;
+      width: 75px; height: 75px;
+      border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1;
     }
     .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
     .thumb-remove {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      background: rgba(220, 38, 38, 0.85);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: absolute; top: 2px; right: 2px;
+      background: rgba(220, 38, 38, 0.9); color: #fff;
+      border: none; border-radius: 50%; width: 20px; height: 20px;
+      cursor: pointer; font-size: 12px;
     }
 
-    /* Actions */
     .btn {
-      width: 100%;
-      padding: 0.85rem 1.25rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-      margin-top: 1rem;
+      width: 100%; padding: 0.85rem; border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 1rem;
     }
     .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: #1d4ed8; }
     .btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    /* Progress bar */
     .progress-box { margin-top: 1rem; display: none; }
     .progress-bar-bg { background: #e2e8f0; height: 10px; border-radius: 6px; overflow: hidden; }
     .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: width 0.2s; }
     .progress-text { font-size: 0.85rem; color: #64748b; margin-top: 0.4rem; text-align: center; }
 
-    /* Text review */
     textarea {
-      width: 100%;
-      height: 110px;
-      padding: 0.75rem;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.95rem;
-      resize: vertical;
-      margin-top: 0.5rem;
+      width: 100%; height: 100px; padding: 0.6rem;
+      border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem;
     }
+    .macro-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px; margin-top: 1rem;
+    }
+    .macro-field { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.6rem; border-radius: 8px; }
+    .macro-field label { font-size: 0.75rem; font-weight: 600; color: #64748b; display: block; }
+    .macro-field input { width: 100%; border: none; background: transparent; font-size: 1rem; font-weight: 700; outline: none; }
 
-    /* Score Scale & Meter */
     .score-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1.25rem;
     }
     .score-bubble {
-      min-width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 90px; height: 90px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: white; font-weight: 800;
     }
     .score-bubble .num { font-size: 2rem; line-height: 1; }
-    .score-bubble .sub { font-size: 0.75rem; text-transform: uppercase; font-weight: 600; opacity: 0.9; }
+    .score-bubble .sub { font-size: 0.7rem; text-transform: uppercase; }
 
-    .meter-bar-container { flex: 1; min-width: 200px; }
-    .meter-track { height: 16px; border-radius: 8px; background: #e2e8f0; overflow: hidden; display: flex; }
-    .meter-fill { height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+    .meter-track { height: 14px; border-radius: 7px; background: #e2e8f0; overflow: hidden; margin-top: 6px; }
+    .meter-fill { height: 100%; width: 0%; transition: width 0.4s ease; }
 
-    /* Badges / Lists */
     .badge {
-      display: inline-block;
-      padding: 0.35rem 0.65rem;
-      border-radius: 6px;
-      font-size: 0.825rem;
-      font-weight: 600;
-      margin: 3px;
+      display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px;
+      font-size: 0.8rem; font-weight: 600;
     }
-    .badge-bad { background: #fee2e2; color: var(--bad); border: 1px solid #fecaca; }
-    .badge-caution { background: #fef3c7; color: var(--caution); border: 1px solid #fde68a; }
-    .badge-good { background: #dcfce7; color: var(--good); border: 1px solid #bbf7d0; }
-    .badge-neutral { background: #f1f5f9; color: var(--neutral); border: 1px solid #e2e8f0; }
+    .badge-bad { background: #fee2e2; color: var(--bad); }
+    .badge-caution { background: #fef3c7; color: var(--caution); }
+    .badge-good { background: #dcfce7; color: var(--good); }
 
     .ingredient-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    .ingredient-table th, .ingredient-table td { padding: 0.6rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid #e2e8f0; }
-    .ingredient-table th { background: #f8fafc; color: #475569; }
-
-    #resultsSection { display: none; }
+    .ingredient-table th, .ingredient-table td { padding: 0.6rem; text-align: left; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <header>
-    <h1>Product Ingredient Scanner</h1>
-    <p>Upload 1 or more photos of the label to grade product safety.</p>
+    <h1>Weight-Loss & Metabolic Health Scanner</h1>
+    <p>Evaluates both Nutrition Facts (Sugars, Sat Fat, Calories) & Ultra-Processed Additives.</p>
   </header>
 
-  <!-- Upload Section -->
   <div class="card">
     <label class="dropzone" id="dropArea">
-      <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-      <p><strong>Click to browse or take photo(s)</strong></p>
-      <p style="font-size: 0.8rem; color: #64748b;">(You can choose multiple photos if the list wraps around)</p>
+      <p><strong>Click or Drop Nutrition and Ingredient Labels Here</strong></p>
+      <p style="font-size: 0.8rem; color: #64748b;">(Select multiple images: one of the Nutrition Facts, one of the Ingredients)</p>
       <input type="file" id="fileInput" accept="image/*" multiple />
     </label>
 
@@ -180,44 +125,51 @@
 
     <div class="progress-box" id="progressBox">
       <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="progress-text" id="progressText">Initializing scan...</div>
+      <div class="progress-text" id="progressText">Ready...</div>
     </div>
 
-    <button class="btn btn-primary" id="scanBtn" disabled>Scan Selected Images</button>
+    <button class="btn btn-primary" id="scanBtn" disabled>Scan Labels</button>
   </div>
 
-  <!-- Editable Extracted Text -->
-  <div class="card" id="textCard" style="display:none;">
-    <h3 style="font-size: 1.1rem; margin-bottom: 0.3rem;">Extracted Ingredient Text</h3>
-    <p style="font-size: 0.85rem; color: #64748b;">Review or fix any misspelled words below, then hit "Analyze":</p>
+  <!-- Detected Data Review -->
+  <div class="card" id="reviewCard" style="display:none;">
+    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Detected Nutrition Profile (Adjust if OCR missed values)</h3>
+    <div class="macro-grid">
+      <div class="macro-field"><label>Calories</label><input type="number" id="inpCalories" value="0"></div>
+      <div class="macro-field"><label>Sugars (g)</label><input type="number" id="inpSugar" value="0"></div>
+      <div class="macro-field"><label>Saturated Fat (g)</label><input type="number" id="inpSatFat" value="0"></div>
+      <div class="macro-field"><label>Sodium (mg)</label><input type="number" id="inpSodium" value="0"></div>
+      <div class="macro-field"><label>Protein (g)</label><input type="number" id="inpProtein" value="0"></div>
+      <div class="macro-field"><label>Fibre (g)</label><input type="number" id="inpFibre" value="0"></div>
+    </div>
+
+    <h3 style="font-size: 1rem; margin-top: 1rem; margin-bottom: 0.3rem;">Ingredients Text</h3>
     <textarea id="rawText"></textarea>
-    <button class="btn btn-primary" style="background:#0f172a;" id="analyzeBtn">Re-Analyze Ingredients</button>
+    <button class="btn btn-primary" style="background: #0f172a;" id="recalculateBtn">Analyze & Calculate Grade</button>
   </div>
 
-  <!-- Scoring & Breakdown Results -->
-  <div class="card" id="resultsSection">
+  <!-- Results Section -->
+  <div class="card" id="resultsSection" style="display:none;">
     <div class="score-container">
       <div class="score-bubble" id="scoreBadge">
-        <span class="num" id="scoreNum">--</span>
-        <span class="sub" id="scoreGrade">/ 10</span>
+        <span class="num" id="scoreNum">0</span>
+        <span class="sub">/ 100</span>
       </div>
-      <div class="meter-bar-container">
-        <h2 id="scaleVerdict" style="margin-bottom: 0.3rem;">Analysis</h2>
-        <p id="scaleDescription" style="font-size: 0.85rem; color:#64748b; margin-bottom: 0.5rem;"></p>
+      <div style="flex:1;">
+        <h2 id="scaleVerdict">Analysis</h2>
+        <p id="scaleDescription" style="font-size: 0.85rem; color:#64748b;"></p>
         <div class="meter-track">
           <div class="meter-fill" id="meterFill"></div>
         </div>
       </div>
     </div>
 
-    <h3 style="font-size: 1rem; margin-top: 1rem;">Detected Ingredients Breakdown</h3>
+    <div id="penaltySummary" style="font-size:0.875rem; background:#f8fafc; padding:0.75rem; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:1rem;"></div>
+
+    <h3>Detected Ingredients Breakdown</h3>
     <table class="ingredient-table">
       <thead>
-        <tr>
-          <th>Ingredient</th>
-          <th>Rating</th>
-          <th>Notes / Reason</th>
-        </tr>
+        <tr><th>Ingredient</th><th>Flag</th><th>Metabolic / Health Impact</th></tr>
       </thead>
       <tbody id="breakdownBody"></tbody>
     </table>
@@ -225,59 +177,40 @@
 </div>
 
 <script>
-  // Ingredient Knowledge Base (Harmful, Caution, Good)
-  const DB = {
-    bad: [
-      { name: "high fructose corn syrup", reason: "Linked to obesity, fatty liver, and metabolic issues" },
-      { name: "partially hydrogenated", reason: "Contains industrial trans fats" },
-      { name: "hydrogenated oil", reason: "Source of trans-fats; raises LDL cholesterol" },
-      { name: "titanium dioxide", reason: "Genotoxicity concerns (banned as food additive in the EU)" },
-      { name: "bha", reason: "Synthetic preservative classified as possible human carcinogen" },
-      { name: "bht", reason: "Potential endocrine disruptor and synthetic preservative" },
-      { name: "potassium bromate", reason: "Possible human carcinogen; banned in multiple countries" },
-      { name: "sodium nitrite", reason: "Can form carcinogenic nitrosamines in the stomach" },
-      { name: "sodium nitrate", reason: "Preservative associated with cardiovascular risks" },
-      { name: "red 40", reason: "Artificial food dye linked to hyperactivity and sensitivities" },
-      { name: "yellow 5", reason: "Tartrazine; artificial food dye linked to allergic reactions" },
-      { name: "yellow 6", reason: "Artificial food dye with suspected contaminants" },
-      { name: "blue 1", reason: "Synthetic colorant linked to hypersensitivity" },
-      { name: "paraben", reason: "Preservative family linked to endocrine/hormonal disruption" },
-      { name: "methylparaben", reason: "Potential endocrine disruptor" },
-      { name: "propylparaben", reason: "Endocrine disruptor concern" },
-      { name: "phthalate", reason: "Endocrine disruptor found in synthetic fragrances" },
-      { name: "sodium lauryl sulfate", reason: "Harsh surfactant, can cause skin/scalp irritation" },
-      { name: "aspartame", reason: "Artificial sweetener classified as possibly carcinogenic (WHO/IARC 2B)" }
-    ],
-    caution: [
-      { name: "palm oil", reason: "High in saturated fat; major environmental concerns" },
-      { name: "canola oil", reason: "Highly processed, refined vegetable oil" },
-      { name: "soybean oil", reason: "High omega-6 to omega-3 ratio, highly processed" },
-      { name: "carrageenan", reason: "Thickener that may cause gastrointestinal inflammation in some" },
-      { name: "maltodextrin", reason: "Very high glycemic index, spikes blood sugar" },
-      { name: "natural flavor", reason: "Broad proprietary term; origin not always transparent" },
-      { name: "artificial flavor", reason: "Synthetic chemical compound flavoring" },
-      { name: "fragrance", reason: "Can hide dozens of undisclosed synthetic chemicals" },
-      { name: "parfum", reason: "Undisclosed fragrance blend" },
-      { name: "sucralose", reason: "Artificial sweetener; may impact gut microbiome" },
-      { name: "sodium benzoate", reason: "Can form benzene in presence of vitamin C" },
-      { name: "citric acid", reason: "Often manufactured using Aspergillus niger mold" }
-    ],
-    good: [
-      { name: "water", reason: "Essential clean solvent / base" },
-      { name: "aqua", reason: "Purified water base" },
-      { name: "olive oil", reason: "Rich in healthy monounsaturated fats & polyphenols" },
-      { name: "extra virgin olive oil", reason: "Unrefined antioxidant-rich oil" },
-      { name: "coconut oil", reason: "Natural source of medium-chain triglycerides (MCTs)" },
-      { name: "shea butter", reason: "Clean, natural nourishing moisturizer" },
-      { name: "aloe vera", reason: "Natural soothing, anti-inflammatory plant extract" },
-      { name: "green tea", reason: "High in EGCG and protective antioxidants" },
-      { name: "oats", reason: "High in soluble beta-glucan fiber" },
-      { name: "chia", reason: "Rich in omega-3 and dietary fiber" },
-      { name: "flaxseed", reason: "Excellent source of ALA omega-3 and lignans" },
-      { name: "probiotics", reason: "Beneficial for gut microbiota balance" },
-      { name: "tocopherol", reason: "Natural Vitamin E antioxidant" }
-    ]
-  };
+  // Comprehensive Metabolic, UPF, and Weight-Loss Ingredient Dictionary
+  const INGREDIENT_RULES = [
+    // Severe Weight-Loss / Metabolic Disruptors
+    { key: "liquid sugar", type: "bad", reason: "Liquid simple sugars cause immediate insulin spikes and block fat oxidation." },
+    { key: "glucose solids", type: "bad", reason: "Refined high-glycemic corn derivative; halts fat-burning." },
+    { key: "high fructose corn syrup", type: "bad", reason: "Directly contributes to visceral fat and non-alcoholic fatty liver." },
+    { key: "modified palm oil", type: "bad", reason: "Atherogenic refined saturated fat, heavily processed." },
+    { key: "partially hydrogenated", type: "bad", reason: "Industrial trans fat linked to heart disease and severe metabolic syndrome." },
+    { key: "polysorbate 80", type: "bad", reason: "Emulsifier shown in clinical trials to erode gut mucus lining and trigger metabolic dysfunction." },
+    { key: "carrageenan", type: "bad", reason: "Inflammatory thickener known to induce gut and metabolic inflammation." },
+    { key: "mono- and diglycerides", type: "bad", reason: "Emulsifiers that can hide trans-fats and disrupt healthy gut bacteria." },
+    { key: "calcium disodium edta", type: "bad", reason: "Synthetic chelating preservative; heavy chemical additive." },
+
+    // Caution Items
+    { key: "sugar", type: "caution", reason: "Caloric simple carbohydrate; directly works against weight-loss calorie deficits." },
+    { key: "canola oil", type: "caution", reason: "Refined seed oil high in omega-6; contributes to total calorie density." },
+    { key: "modified corn", type: "caution", reason: "Ultra-processed starch filler; high glycemic index." },
+    { key: "potato starch", type: "caution", reason: "Fast-digesting starchy carbohydrate filler." },
+    { key: "maltodextrin", type: "caution", reason: "Higher glycemic index than table sugar; triggers glucose spikes." },
+    { key: "sorbic acid", type: "caution", reason: "Synthetic preservative." },
+    { key: "potassium sorbate", type: "caution", reason: "Synthetic antimicrobial food preservative." },
+    { key: "cellulose gum", type: "caution", reason: "Ultra-processed thickener/texturizer." },
+    { key: "xanthan gum", type: "caution", reason: "Thickener/stabilizer; can cause digestive distress in larger quantities." },
+    { key: "natural flavour", type: "caution", reason: "Proprietary lab-developed flavoring chemicals." },
+
+    // Whole Food / Good Items
+    { key: "water", type: "good", reason: "Zero-calorie pure hydration." },
+    { key: "milk", type: "good", reason: "Whole dairy containing natural protein and calcium." },
+    { key: "cream", type: "caution", reason: "Natural dairy, but very high in caloric density and saturated fat." },
+    { key: "egg", type: "good", reason: "High-satiety protein and choline source." },
+    { key: "cayenne", type: "good", reason: "Contains capsaicin which mildly supports thermogenesis." },
+    { key: "tomato paste", type: "good", reason: "Source of antioxidant lycopene, but watch for added liquid sugars." },
+    { key: "vinegar", type: "good", reason: "Acetic acid helps blunt post-meal blood glucose spikes." }
+  ];
 
   let filesList = [];
   const fileInput = document.getElementById('fileInput');
@@ -286,14 +219,9 @@
   const progressBox = document.getElementById('progressBox');
   const progressBar = document.getElementById('progressBar');
   const progressText = document.getElementById('progressText');
-  const textCard = document.getElementById('textCard');
-  const rawTextArea = document.getElementById('rawText');
-  const analyzeBtn = document.getElementById('analyzeBtn');
 
-  // File selection handling
   fileInput.addEventListener('change', (e) => {
-    const selected = Array.from(e.target.files);
-    filesList = filesList.concat(selected);
+    filesList = filesList.concat(Array.from(e.target.files));
     renderThumbs();
   });
 
@@ -302,30 +230,21 @@
     filesList.forEach((file, index) => {
       const item = document.createElement('div');
       item.className = 'thumb-item';
-      
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
-      
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'thumb-remove';
-      removeBtn.innerHTML = '&times;';
-      removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        filesList.splice(index, 1);
-        renderThumbs();
-      };
-
+      const btn = document.createElement('button');
+      btn.className = 'thumb-remove';
+      btn.innerHTML = '&times;';
+      btn.onclick = (e) => { e.stopPropagation(); filesList.splice(index, 1); renderThumbs(); };
       item.appendChild(img);
-      item.appendChild(removeBtn);
+      item.appendChild(btn);
       thumbContainer.appendChild(item);
     });
     scanBtn.disabled = filesList.length === 0;
   }
 
-  // Scan multiple files via Tesseract
   scanBtn.addEventListener('click', async () => {
     if (filesList.length === 0) return;
-
     scanBtn.disabled = true;
     progressBox.style.display = 'block';
     let combinedText = "";
@@ -333,189 +252,173 @@
     try {
       for (let i = 0; i < filesList.length; i++) {
         const file = filesList[i];
-        const label = `Scanning photo ${i + 1} of ${filesList.length}...`;
-        progressText.innerText = label;
-
-        const result = await Tesseract.recognize(
-          file,
-          'eng',
-          {
-            logger: m => {
-              if (m.status === 'recognizing text') {
-                const subProgress = Math.round(m.progress * 100);
-                const overall = Math.round(((i + m.progress) / filesList.length) * 100);
-                progressBar.style.width = overall + '%';
-                progressText.innerText = `${label} (${subProgress}%)`;
-              }
+        progressText.innerText = `Scanning image ${i + 1} of ${filesList.length}...`;
+        const result = await Tesseract.recognize(file, 'eng+fra', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const overall = Math.round(((i + m.progress) / filesList.length) * 100);
+              progressBar.style.width = overall + '%';
             }
           }
-        );
+        });
         combinedText += "\n" + result.data.text;
       }
 
-      progressBar.style.width = '100%';
-      progressText.innerText = "Scan complete!";
-
-      // Clean raw text
-      combinedText = cleanOCRText(combinedText);
-      rawTextArea.value = combinedText;
-      textCard.style.display = 'block';
-
-      // Perform analysis
-      evaluateIngredients(combinedText);
+      document.getElementById('rawText').value = combinedText;
+      parseNutritionalData(combinedText);
+      document.getElementById('reviewCard').style.display = 'block';
+      computeHealthScore();
     } catch (err) {
-      alert("Error reading images: " + err.message);
+      alert("Error scanning images: " + err.message);
     } finally {
       scanBtn.disabled = false;
-      setTimeout(() => { progressBox.style.display = 'none'; }, 1000);
+      progressBox.style.display = 'none';
     }
   });
 
-  analyzeBtn.addEventListener('click', () => {
-    evaluateIngredients(rawTextArea.value);
-  });
+  document.getElementById('recalculateBtn').addEventListener('click', computeHealthScore);
 
-  function cleanOCRText(text) {
-    return text
-      .replace(/[\n\r]+/g, ' ')
-      .replace(/^.*?ingredients:?/i, '') // remove prefix before ingredients
-      .trim();
+  // Extract Macros from Canadian/US Nutrition tables
+  function parseNutritionalData(text) {
+    const clean = text.replace(/,/g, '.');
+
+    const calMatch = clean.match(/Calories\s*[:]?\s*(\d+)/i);
+    if (calMatch) document.getElementById('inpCalories').value = calMatch[1];
+
+    const sugarMatch = clean.match(/(?:Sugars|Sucres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
+    if (sugarMatch) document.getElementById('inpSugar').value = sugarMatch[1];
+
+    const satMatch = clean.match(/(?:Saturates|Satur[ée]s)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
+    if (satMatch) document.getElementById('inpSatFat').value = satMatch[1];
+
+    const sodMatch = clean.match(/(?:Sodium)\s*[:]?\s*(\d+)\s*mg/i);
+    if (sodMatch) document.getElementById('inpSodium').value = sodMatch[1];
+
+    const protMatch = clean.match(/(?:Protein|Prot[ée]ines)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
+    if (protMatch) document.getElementById('inpProtein').value = protMatch[1];
+
+    const fibMatch = clean.match(/(?:Fibre|Fibres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
+    if (fibMatch) document.getElementById('inpFibre').value = fibMatch[1];
   }
 
-  // Parsing & Evaluation Logic
-  function evaluateIngredients(fullText) {
-    if (!fullText.trim()) return;
+  // Weight-Loss & Health Algorithm
+  function computeHealthScore() {
+    const cal = parseFloat(document.getElementById('inpCalories').value) || 0;
+    const sugar = parseFloat(document.getElementById('inpSugar').value) || 0;
+    const satFat = parseFloat(document.getElementById('inpSatFat').value) || 0;
+    const sodium = parseFloat(document.getElementById('inpSodium').value) || 0;
+    const protein = parseFloat(document.getElementById('inpProtein').value) || 0;
+    const fibre = parseFloat(document.getElementById('inpFibre').value) || 0;
+    const text = document.getElementById('rawText').value.toLowerCase();
 
-    // Split text by commas, semicolons, or periods
-    const rawTokens = fullText.split(/[,;•\n\.]+/);
-    const parsedList = rawTokens
-      .map(item => item.replace(/[\(\)\[\]\{\}]/g, '').trim())
-      .filter(item => item.length > 1 && item.length < 50);
+    // Base score starts at 100
+    let score = 100;
+    let penalties = [];
 
-    let badFound = [];
-    let cautionFound = [];
-    let goodFound = [];
-    let neutralFound = [];
+    // --- 1. Nutrition / Macro Penalties (Weight Loss Focus) ---
+    if (sugar >= 20) {
+      score -= 35; penalties.push(`Extremely High Sugar (${sugar}g): -35 pts`);
+    } else if (sugar >= 10) {
+      score -= 22; penalties.push(`High Sugar (${sugar}g): -22 pts`);
+    } else if (sugar >= 4) {
+      score -= 10; penalties.push(`Added Sugar Content (${sugar}g): -10 pts`);
+    }
 
-    parsedList.forEach(rawItem => {
-      const lower = rawItem.toLowerCase();
-      let matched = false;
+    if (satFat >= 8) {
+      score -= 25; penalties.push(`High Saturated Fat (${satFat}g): -25 pts`);
+    } else if (satFat >= 3) {
+      score -= 12; penalties.push(`Moderate Saturated Fat (${satFat}g): -12 pts`);
+    }
 
-      // Check Bad
-      for (const item of DB.bad) {
-        if (lower.includes(item.name)) {
-          badFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'bad' });
-          matched = true;
-          break;
+    if (cal >= 250) {
+      score -= 15; penalties.push(`High Caloric Density (${cal} kcal/serving): -15 pts`);
+    } else if (cal >= 150) {
+      score -= 8; penalties.push(`Moderate Caloric Load (${cal} kcal/serving): -8 pts`);
+    }
+
+    if (sodium >= 400) {
+      score -= 12; penalties.push(`High Sodium (${sodium}mg): -12 pts`);
+    }
+
+    // Bonuses
+    if (protein >= 8) { score += 6; penalties.push(`High Satiety Protein (+${protein}g): +6 pts`); }
+    if (fibre >= 3) { score += 6; penalties.push(`Digestive Fiber (+${fibre}g): +6 pts`); }
+
+    // --- 2. Ingredient Analysis ---
+    let matchedIngredients = [];
+    INGREDIENT_RULES.forEach(rule => {
+      if (text.includes(rule.key)) {
+        if (rule.type === 'bad') {
+          score -= 15;
+          penalties.push(`Harmful Additive (${rule.key}): -15 pts`);
+        } else if (rule.type === 'caution') {
+          score -= 5;
         }
+        matchedIngredients.push(rule);
       }
-      if (matched) return;
-
-      // Check Caution
-      for (const item of DB.caution) {
-        if (lower.includes(item.name)) {
-          cautionFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'caution' });
-          matched = true;
-          break;
-        }
-      }
-      if (matched) return;
-
-      // Check Good
-      for (const item of DB.good) {
-        if (lower.includes(item.name)) {
-          goodFound.push({ name: rawItem, rule: item.name, reason: item.reason, type: 'good' });
-          matched = true;
-          break;
-        }
-      }
-      if (matched) return;
-
-      // Otherwise Neutral
-      neutralFound.push({ name: rawItem, rule: 'Standard', reason: 'Generally recognized / unflagged', type: 'neutral' });
     });
 
-    // Score Calculation (Scale of 1 - 10 and 0 - 100%)
-    // Base score is 100: Bad deducts 20, Caution deducts 7, Good adds 4
-    let score = 85; 
-    score -= (badFound.length * 20);
-    score -= (cautionFound.length * 8);
-    score += (goodFound.length * 4);
+    // Check for Official Health Canada Warning Seal ("Élevé en Gras sat / Sucres")
+    if (text.includes("élevé en") || text.includes("high in")) {
+      score -= 15;
+      penalties.push("Official Warning Seal Detected ('High in Sat Fat/Sugar'): -15 pts");
+    }
 
-    if (score > 100) score = 100;
-    if (score < 10) score = 10;
+    // Clamp score
+    score = Math.max(5, Math.min(100, score));
 
-    const scale10 = (score / 10).toFixed(1);
-
-    renderScoreDashboard(scale10, score, badFound, cautionFound, goodFound, neutralFound);
+    renderDashboard(score, penalties, matchedIngredients);
   }
 
-  function renderScoreDashboard(scale10, percentage, bad, caution, good, neutral) {
-    const results = document.getElementById('resultsSection');
-    const scoreNum = document.getElementById('scoreNum');
-    const scoreBadge = document.getElementById('scoreBadge');
-    const scaleVerdict = document.getElementById('scaleVerdict');
-    const scaleDesc = document.getElementById('scaleDescription');
-    const meterFill = document.getElementById('meterFill');
+  function renderDashboard(score, penalties, matchedIngredients) {
+    const section = document.getElementById('resultsSection');
+    const badge = document.getElementById('scoreBadge');
+    const num = document.getElementById('scoreNum');
+    const verdict = document.getElementById('scaleVerdict');
+    const desc = document.getElementById('scaleDescription');
+    const meter = document.getElementById('meterFill');
+    const penaltyBox = document.getElementById('penaltySummary');
     const tableBody = document.getElementById('breakdownBody');
 
-    results.style.display = 'block';
-    scoreNum.innerText = scale10;
-    meterFill.style.width = percentage + '%';
+    section.style.display = 'block';
+    num.innerText = score;
+    meter.style.width = score + '%';
 
-    let color = 'var(--good)';
-    let verdict = "Excellent & Clean";
-    let desc = "Few to no harmful additives found. Mostly clean or wholesome ingredients.";
+    let color = 'var(--bad)';
+    let title = "Avoid / High Weight-Gain Risk (Red Zone)";
+    let subtitle = "Dense in free sugars, saturated fats, or metabolic-disrupting additives. Unsuitable for weight loss.";
 
-    if (percentage < 45) {
-      color = 'var(--bad)';
-      verdict = "Poor / High Risk";
-      desc = "Contains known high-risk additives, artificial colorants, or harmful preservatives.";
-    } else if (percentage < 75) {
+    if (score >= 70) {
+      color = 'var(--good)';
+      title = "Safe & Weight-Loss Friendly (Green Zone)";
+      subtitle = "Clean profile with minimal refined sugars, low saturated fat, and wholesome ingredients.";
+    } else if (score >= 45) {
       color = 'var(--caution)';
-      verdict = "Moderate / Use Caution";
-      desc = "Contains refined ingredients, processed fillers, or potential irritants.";
+      title = "Moderate Caution / Calorie Dense (Orange Zone)";
+      subtitle = "Processed condiments or foods with added sugars/fats. Strictly limit portion sizes.";
     }
 
-    scoreBadge.style.backgroundColor = color;
-    meterFill.style.backgroundColor = color;
-    scaleVerdict.innerText = `${verdict} (${percentage}/100)`;
-    scaleVerdict.style.color = color;
-    scaleDesc.innerText = desc;
+    badge.style.backgroundColor = color;
+    meter.style.backgroundColor = color;
+    verdict.innerText = title;
+    verdict.style.color = color;
+    desc.innerText = subtitle;
 
-    // Populate Table
+    penaltyBox.innerHTML = `<strong>Score Factors:</strong><br>` + penalties.join('<br>');
+
     tableBody.innerHTML = '';
-    const allMatches = [...bad, ...caution, ...good, ...neutral];
-
-    if (allMatches.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8;">No ingredients recognized. Try adjusting your text above.</td></tr>`;
-      return;
-    }
-
-    allMatches.forEach(item => {
+    matchedIngredients.forEach(item => {
       const row = document.createElement('tr');
-      let badgeClass = 'badge-neutral';
-      let label = 'Neutral';
-
-      if (item.type === 'bad') { badgeClass = 'badge-bad'; label = 'Avoid / Bad'; }
-      if (item.type === 'caution') { badgeClass = 'badge-caution'; label = 'Caution'; }
-      if (item.type === 'good') { badgeClass = 'badge-good'; label = 'Good'; }
-
+      const badgeClass = item.type === 'bad' ? 'badge-bad' : (item.type === 'caution' ? 'badge-caution' : 'badge-good');
       row.innerHTML = `
-        <td><strong>${escapeHtml(item.name)}</strong></td>
-        <td><span class="badge ${badgeClass}">${label}</span></td>
-        <td style="color:#64748b;">${escapeHtml(item.reason)}</td>
+        <td><strong>${item.key}</strong></td>
+        <td><span class="badge ${badgeClass}">${item.type.toUpperCase()}</span></td>
+        <td>${item.reason}</td>
       `;
       tableBody.appendChild(row);
     });
 
-    results.scrollIntoView({ behavior: 'smooth' });
-  }
-
-  function escapeHtml(str) {
-    return str.replace(/[&<>'"]/g, 
-      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-    );
+    section.scrollIntoView({ behavior: 'smooth' });
   }
 </script>
 </body>
