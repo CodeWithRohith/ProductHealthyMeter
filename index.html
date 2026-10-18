@@ -238,10 +238,9 @@ footer{color:var(--muted);font-size:.78rem;text-align:center;padding:10px 0 34px
 
     <div class="demo-row">
       <span>Quick test examples:</span>
-      <button class="chip" onclick="loadSample('juice')">🧃 Fruit juice (Liquid sugar)</button>
+      <button class="chip" onclick="loadSample('juice')">🧃 Fruit juice</button>
       <button class="chip" onclick="loadSample('icecream')">🍦 Ice cream</button>
-      <button class="chip" onclick="loadSample('mayo')">🥫 Spicy mayo</button>
-      <button class="chip" onclick="loadSample('ketchup')">🍅 Ketchup</button>
+      <button class="chip" onclick="loadSample('chips')">🥔 Potato chips</button>
     </div>
   </section>
 
@@ -344,7 +343,7 @@ footer{color:var(--muted);font-size:.78rem;text-align:center;padding:10px 0 34px
 
 <script>
 // =========================================================================
-// 130+ INGREDIENT & ADDITIVE DATABASE (Expanded for Fruit Juice Concentrates)
+// EXPANDED INGREDIENT & ADDITIVE DATABASE
 // =========================================================================
 const INGREDIENT_DATABASE = [
   // 1. FREE SUGARS, JUICE CONCENTRATES & REFINED SWEETENERS (BAD)
@@ -361,6 +360,7 @@ const INGREDIENT_DATABASE = [
   { name: "dextrose", aliases: ["d-glucose"], type: "bad", category: "Sugar / Metabolic", reason: "Pure glucose; immediate glycemic impact with zero fiber or micronutrients." },
   { name: "brown rice syrup", aliases: ["sirop de riz brun"], type: "bad", category: "Sugar / Metabolic", reason: "Marketed as health food, but is nearly 100% fast-acting maltotriose and glucose." },
   { name: "agave nectar", aliases: ["sirop d'agave", "agave syrup"], type: "bad", category: "Sugar / Metabolic", reason: "Up to 85% pure concentrated fructose; heavily taxes the liver." },
+  { name: "sucralose", aliases: ["splenda"], type: "bad", category: "Artificial Sweetener", reason: "Zero-calorie sweetener shown in some studies to negatively alter the gut microbiome and affect insulin sensitivity over time." },
 
   // 2. INDUSTRIAL EMULSIFIERS & GUT DISRUPTORS (BAD)
   { name: "polysorbate 80", aliases: ["polyoxyethylene 20 sorbitan monooleate", "e433"], type: "bad", category: "Emulsifier / Gut", reason: "Erodes protective mucosal gut barrier in clinical trials, inducing low-grade inflammation and metabolic syndrome." },
@@ -372,7 +372,8 @@ const INGREDIENT_DATABASE = [
   // 3. REFINED FATS & TRANS FATS (BAD)
   { name: "modified palm oil", aliases: ["huile de palme modifiée", "modified palm kernel oil"], type: "bad", category: "Refined Fat", reason: "Chemically or thermally altered saturated fat; highly atherogenic and caloric." },
   { name: "partially hydrogenated oil", aliases: ["huile partiellement hydrogénée", "partially hydrogenated soybean oil"], type: "bad", category: "Trans Fat", reason: "Major source of artificial trans-fat; strongly associated with visceral adiposity and cardiovascular disease." },
-  { name: "cotton seed oil", aliases: ["cottonseed oil", "huile de graine de coton"], type: "bad", category: "Refined Oil", reason: "Industrial byproduct seed oil dominated by inflammatory omega-6 linoleic acid." },
+  { name: "cotton seed oil", aliases: ["cottonseed oil", "huile de graine de coton"], type: "bad", category: "Refined Seed Oil", reason: "Industrial byproduct seed oil dominated by inflammatory omega-6 linoleic acid." },
+  { name: "soybean oil", aliases: ["huile de soya", "huile de soja", "soya oil"], type: "bad", category: "Refined Seed Oil", reason: "Highly refined industrial oil heavily skewed towards inflammatory omega-6 fatty acids." },
 
   // 4. CHEMICAL PRESERVATIVES & SYNTHETIC DYES (BAD)
   { name: "calcium disodium edta", aliases: ["edta de calcium disodique", "disodium edta"], type: "bad", category: "Preservative", reason: "Synthetic chelating preservative." },
@@ -381,17 +382,31 @@ const INGREDIENT_DATABASE = [
   { name: "red 40", aliases: ["allura red", "e129"], type: "bad", category: "Synthetic Dye", reason: "Azo food dye linked to hyperactivity and gut sensitivities." },
 
   // 5. CAUTION INGREDIENTS
+  { name: "sunflower oil", aliases: ["mid-oleic sunflower oil", "high-oleic sunflower oil", "huile de tournesol"], type: "caution", category: "Refined Seed Oil", reason: "High in dietary fat calories (~120 kcal/tbsp); mid/high-oleic versions provide more stable monounsaturated fats but remain calorie-dense." },
+  { name: "vegetable oil", aliases: ["huile végétale"], type: "caution", category: "Refined Seed Oil", reason: "Generic umbrella term often hiding cheap, highly refined, calorie-dense inflammatory oils." },
+  { name: "canola oil", aliases: ["huile de canola", "rapeseed oil"], type: "caution", category: "Refined Seed Oil", reason: "Refined seed oil high in calories (~120 kcal/tbsp)." },
+  { name: "sugar", aliases: ["sucre", "cane sugar", "white sugar"], type: "caution", category: "Caloric Sweetener", reason: "Refined sucrose; directly elevates dietary calorie density and insulin resistance." },
+  { name: "sea salt", aliases: ["sel de mer", "salt", "sel"], type: "caution", category: "Sodium", reason: "Essential mineral, but high amounts added during processing can impact blood pressure and water retention." },
+  { name: "enriched wheat flour", aliases: ["farine de blé enrichie", "wheat flour", "farine de blé"], type: "caution", category: "Refined Carbohydrate", reason: "Starchy refined flour stripped of its natural bran and germ fiber, acting similarly to sugar in the bloodstream." },
+  { name: "aspartame", aliases: ["e951"], type: "caution", category: "Artificial Sweetener", reason: "Non-nutritive sweetener that can cause headaches or metabolic confusion in sensitive individuals." },
+  { name: "erythritol", aliases: ["érythritol"], type: "caution", category: "Sugar Alcohol", reason: "Generally well-tolerated low-calorie sweetener, but high amounts can cause digestive upset." },
+  { name: "xanthan gum", aliases: ["gomme xanthane", "e415"], type: "caution", category: "Thickener", reason: "Fermented polysaccharide; generally safe but can cause bloating or digestive upset in high doses." },
+  { name: "guar gum", aliases: ["gomme de guar", "e412"], type: "caution", category: "Thickener", reason: "Bean-derived fiber used as a thickener; can cause gas in sensitive individuals." },
+  { name: "soy lecithin", aliases: ["lécithine de soya", "soybean lecithin", "lécithine de soja", "sunflower lecithin", "lécithine de tournesol"], type: "caution", category: "Emulsifier", reason: "Highly processed emulsifier; amounts are usually too small to cause harm but signals ultra-processing." },
   { name: "fruit purée", aliases: ["fruit puree", "purée de fruits", "pineapple purée", "pineapple puree"], type: "caution", category: "Fruit Sugars", reason: "Blended fruit paste; retains minerals but lacks the satiety of whole, intact fruit." },
   { name: "citric acid", aliases: ["acide citrique", "e330"], type: "caution", category: "Acidity Regulator", reason: "Commercially manufactured via Aspergillus niger fermentation; common preservative/sour additive." },
   { name: "sulfites", aliases: ["sulphites", "sulfite"], type: "caution", category: "Preservative", reason: "Antimicrobial preservative frequently found in concentrated juices and dried fruit." },
-  { name: "sugar", aliases: ["sucre", "cane sugar", "white sugar"], type: "caution", category: "Caloric Sweetener", reason: "Refined sucrose; directly elevates dietary calorie density and insulin resistance." },
-  { name: "canola oil", aliases: ["huile de canola", "rapeseed oil"], type: "caution", category: "Refined Oil", reason: "Refined seed oil high in calories (~120 kcal/tbsp)." },
   { name: "potassium sorbate", aliases: ["sorbate de potassium", "e202"], type: "caution", category: "Preservative", reason: "Synthetic antimicrobial food preservative." },
   { name: "sodium benzoate", aliases: ["benzoate de sodium", "e211"], type: "caution", category: "Preservative", reason: "Synthetic preservative used to prevent bacterial growth." },
   { name: "natural flavour", aliases: ["saveur naturelle", "arômes naturels", "natural flavors"], type: "caution", category: "Flavoring", reason: "Proprietary umbrella term for concentrated laboratory extracts." },
 
   // 6. GOOD: WHOLE FOODS & ANTIOXIDANTS
   { name: "water", aliases: ["eau"], type: "good", category: "Hydration", reason: "Zero-calorie pure hydration." },
+  { name: "potatoes", aliases: ["pommes de terre", "potato", "patate"], type: "good", category: "Whole Food", reason: "Natural whole-food carbohydrate and excellent potassium source." },
+  { name: "oats", aliases: ["rolled oats", "avoine", "flocons d'avoine"], type: "good", category: "Whole Grain", reason: "Excellent source of complex carbohydrates and soluble beta-glucan fiber." },
+  { name: "olive oil", aliases: ["extra virgin olive oil", "huile d'olive"], type: "good", category: "Healthy Fat", reason: "Rich in heart-healthy monounsaturated fats and polyphenols." },
+  { name: "avocado oil", aliases: ["huile d'avocat"], type: "good", category: "Healthy Fat", reason: "Heart-healthy monounsaturated fat with a high smoke point." },
+  { name: "stevia", aliases: ["stevia leaf extract", "extrait de feuille de stévia"], type: "good", category: "Natural Sweetener", reason: "Zero-calorie natural plant sweetener that does not spike insulin." },
   { name: "vitamin c", aliases: ["ascorbic acid", "acide ascorbique"], type: "good", category: "Antioxidant", reason: "Essential micronutrient supporting immune and metabolic health." },
   { name: "tomato paste", aliases: ["pâte de tomates"], type: "good", category: "Antioxidant", reason: "Concentrated source of the antioxidant lycopene." },
   { name: "vinegar", aliases: ["vinaigre"], type: "good", category: "Metabolic Support", reason: "Acetic acid helps blunt postprandial blood sugar spikes." },
@@ -488,16 +503,14 @@ $('ingToggle').addEventListener('click', () => {
 // Resilient parsing: accepts numbers even if 'g' was read as '9', 'q', or missing
 function parseNutritionalData(text) {
   const clean = text.replace(/,/g, '.');
-
   const extractNum = regex => {
     const m = clean.match(regex);
-    return m ? m[1] : null;
+    return m ? Math.max(0, parseFloat(m[1])) : null;
   };
 
   const cal = extractNum(/(?:Calories|Valeur\s*énergétique)\b[^\d\n\r]*(\d+)/i);
   if (cal !== null) $('inpCalories').value = cal;
 
-  // Sugars: matches "Sugars 24 g", "Sugars 24", "Sugars 24 9", "Sucres: 24g"
   const sugar = extractNum(/(?:Sugars|Sucres)\b[^\d\n\r]{0,20}(\d+(?:\.\d+)?)/i);
   if (sugar !== null) $('inpSugar').value = sugar;
 
@@ -526,15 +539,10 @@ const SAMPLES = {
     v: [290, 27, 10, 60, 3, 1], 
     t: "Élevé en Gras sat. Sucres. Ingredients: Cream, Milk, Sugars (sugar, glucose solids), Chocolatey fudge pieces (modified palm oil, sugar, cocoa, unsweetened chocolate, soy lecithin), Modified milk ingredients, Soy mono- and diglycerides, Cellulose gum, Guar gum, Polysorbate 80, Carrageenan, Natural flavour, Annatto." 
   },
-  mayo: { 
-    name: 'Spicy mayo', 
-    v: [40, 1, 0.3, 100, 0, 0], 
-    t: "Ingredients: Water, Canola oil, Vinegar, Sugar, Modified corn and potato starch, Cayenne pepper, Salt, Liquid whole egg and egg yolk, Concentrated lemon juice, Red chili pepper, Natural flavour, Carrot fibre, Sorbic acid, Garlic powder, Xanthan gum, Potassium sorbate, Calcium disodium EDTA." 
-  },
-  ketchup: { 
-    name: 'Tomato ketchup', 
-    v: [20, 4, 0, 160, 0.3, 0], 
-    t: "Ingredients: Tomato paste, Liquid sugar, Vinegar, Salt, Seasoning." 
+  chips: { 
+    name: 'Potato chips', 
+    v: [250, 0, 1.0, 280, 4, 1], 
+    t: "Nutrition Facts\nCalories 250 cal\nFat 13 g\nSaturates 1.0 g\nSugars 0 g\nIngredients\nPotatoes, Vegetable And/or Mid-oleic Sunflower Oil, Sea Salt." 
   }
 };
 
@@ -548,18 +556,32 @@ function loadSample(key) {
 
 // ---------- SCORING ALGORITHM ----------
 function evaluateDashboard() {
-  const n = id => parseFloat($(id).value) || 0;
+  const n = id => Math.max(0, parseFloat($(id).value) || 0);
   const cal = n('inpCalories'), sugar = n('inpSugar'), satFat = n('inpSatFat'),
         sodium = n('inpSodium'), protein = n('inpProtein'), fibre = n('inpFibre');
   
   let fullText = $('rawText').value.toLowerCase();
-  fullText = fullText.replace(/(\b[A-Za-z]+)-\s*[\r\n]+\s*([A-Za-z]+\b)/g, '$1$2');
+  // De-hyphenate broken words
+  fullText = fullText.replace(/(\b[a-zà-ÿ]+)-\s*[\r\n]+\s*([a-zà-ÿ]+\b)/g, '$1$2');
 
-  const ingStart = fullText.match(/ingr[ée]dients?\s*:?/);
-  const text = ingStart ? fullText.slice(ingStart.index + ingStart[0].length) : fullText;
+  // Find Ingredients start using tolerant regex (accounting for OCR errors like "lngredients")
+  const ingStart = fullText.match(/\b[iIl1|]ngr[ée]dients?\b\s*[:\n\-]?/i);
+  let text = '';
 
+  if (ingStart) {
+    // Slice off text everything after "Ingredients"
+    text = fullText.slice(ingStart.index + ingStart[0].length);
+  } else {
+    // If OCR completely missed the header, strip out rows that look like Nutrition Facts to avoid bleeding.
+    text = fullText.replace(/^.*(?:calories|valeur énergétique|sugars|sucres|fat|lipides|sodium|protein|protéines|fibre|carbohydrate|glucides|cholesterol|iron|calcium|potassium).*$/gmi, '');
+  }
+
+  // Strict Word Boundary Matching: Prevent "sugars" from triggering "sugar" 
+  // Supports French accents and hyphens.
   const hasTerm = (hay, term) => {
-    return hay.includes(term.toLowerCase());
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-zA-Z0-9à-ÿÀ-Ÿ\\-&])` + escaped + `([^a-zA-Z0-9à-ÿÀ-Ÿ\\-&]|$)`, 'i');
+    return regex.test(hay);
   };
 
   const ledger = [];
@@ -599,7 +621,7 @@ function evaluateDashboard() {
       if (hasTerm(text, term) && !seen.has(rule.name)) {
         seen.add(rule.name); matched.push(rule);
         if (rule.type === 'bad' && (rule.category.includes('Emulsifier') || rule.category.includes('Gut'))) gutDisrupted = true;
-        break;
+        break; // Match rule once, move to next rule
       }
     }
   });
@@ -667,7 +689,7 @@ function renderUI(d) {
       : 'This food combines high caloric density with rapid simple sugars or processed fats. It creates hunger rebounds within 1-2 hours while halting body fat burning. Choose whole foods instead.';
   } else if (score < 70) {
     $('actionTitle').textContent = 'Recommendation: measure strictly';
-    $('actionBody').textContent = 'This item carries hidden sugars or calorie-dense fats. Never pour freely: measure with a tablespoon to avoid blowing your calorie deficit.';
+    $('actionBody').textContent = 'This item carries hidden sugars or calorie-dense fats. Never pour freely: measure with a kitchen scale or tablespoon to avoid accidentally blowing your calorie deficit.';
   } else {
     $('actionTitle').textContent = 'Recommendation: diet friendly';
     $('actionBody').textContent = 'Fits easily into a healthy calorie deficit. High satiety signals and clean ingredients make it safe for your metabolic goals.';
@@ -685,7 +707,7 @@ function renderReport(r) {
   const pct = (v, ref) => Math.round(v / ref * 100);
   $('repOverview').textContent = `${name} scores ${score} out of 100 and earns a grade ${gi.g} for weight loss. ${gi.sub}`;
 
-  const sugarTxt = sugar >= 20 ? `${sugar} g of sugars is very high (${pct(sugar, 50)}% of your daily maximum in a single glass)`
+  const sugarTxt = sugar >= 20 ? `${sugar} g of sugars is very high (${pct(sugar, 50)}% of your daily maximum in a single serving)`
     : sugar >= 10 ? `${sugar} g of sugars is moderately high (${pct(sugar, 50)}% of a 50 g daily limit)`
     : sugar >= 4 ? `${sugar} g of sugars is modest but worth tracking`
     : `sugars are low at ${sugar} g`;
@@ -694,7 +716,7 @@ function renderReport(r) {
   const calTxt = cal >= 250 ? `${cal} kcal makes it calorie-dense` : cal >= 100 ? `${cal} kcal is a moderate load` : `${cal} kcal is light`;
   const sodTxt = sodium >= 350 ? `sodium is high at ${sodium} mg` : `sodium is low at ${sodium} mg`;
   const satietyTxt = (protein + fibre) >= 5 ? `With ${protein} g protein and ${fibre} g fibre it provides decent satiety.`
-    : `With 0 g protein and 0 g fibre it offers zero physical satiety, meaning calories are absorbed without reducing hunger.`;
+    : `With ${protein} g protein and ${fibre} g fibre it offers minimal physical satiety, meaning calories are absorbed without reducing hunger.`;
   $('repNutrition').textContent = `Per serving: ${sugarTxt}; ${fatTxt}; ${calTxt}; and ${sodTxt}. ${satietyTxt}`;
 
   let ing = `We recognized ${matched.length} ingredient${matched.length === 1 ? '' : 's'}: ${bad.length} to avoid, ${caution.length} to watch, and ${good.length} beneficial.`;
@@ -703,10 +725,10 @@ function renderReport(r) {
   $('repIngredients').textContent = ing;
 
   const pos = [], neg = [];
-  if (sugar < 4) pos.push('Low in sugars'); if (satFat < 3) pos.push('Zero saturated fat');
+  if (sugar < 4) pos.push('Low in sugars'); if (satFat < 3) pos.push('Zero/low saturated fat');
   if (sodium < 150) pos.push('Low sodium');
   good.forEach(g => pos.push(`${cap(g.name)}: ${g.category.toLowerCase()}`));
-  if (sugar >= 10) neg.push(`High sugars (${sugar} g — 6 teaspoons!)`);
+  if (sugar >= 10) neg.push(`High sugars (${sugar} g — ${Math.round(sugar/4)} teaspoons!)`);
   if (isLiquidSugarBomb) neg.push('Liquid free sugar: rapid insulin spike & zero fiber');
   bad.forEach(b => neg.push(`${cap(b.name)}: ${b.category.toLowerCase()}`));
   caution.forEach(c => neg.push(`${cap(c.name)}: ${c.category.toLowerCase()}`));
@@ -785,7 +807,7 @@ function renderIngredients(matched) {
   });
   const box = $('ingList'); box.innerHTML = '';
   const shown = matched.filter(m => ingFilter === 'all' || m.type === ingFilter);
-  if (!shown.length) { box.innerHTML = '<div class="empty">No ingredients in this group. Clean baseline.</div>'; return; }
+  if (!shown.length) { box.innerHTML = '<div class="empty">No ingredients in this group.</div>'; return; }
   ['bad', 'caution', 'good'].forEach(t => shown.filter(m => m.type === t).forEach(m => {
     const d = document.createElement('div'); d.className = 'ing ' + m.type;
     d.innerHTML = `<div><strong>${m.name}</strong><span class="cat">${m.category}</span><p>${m.reason}</p></div><span class="pill ${m.type}">${TYPE_LABEL[m.type]}</span>`;
