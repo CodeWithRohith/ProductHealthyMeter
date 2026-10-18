@@ -562,7 +562,12 @@ function evaluateDashboard() {
   const n = id => parseFloat($(id).value) || 0;
   const cal = n('inpCalories'), sugar = n('inpSugar'), satFat = n('inpSatFat'),
         sodium = n('inpSodium'), protein = n('inpProtein'), fibre = n('inpFibre');
-  const text = $('rawText').value.toLowerCase();
+  const fullText = $('rawText').value.toLowerCase();
+  // Match ingredients only inside the ingredients section, so "Sugars 0 g" in the nutrition table is not read as an ingredient
+  const ingStart = fullText.match(/ingr[ée]dients?\s*:?/);
+  const text = ingStart ? fullText.slice(ingStart.index + ingStart[0].length) : fullText;
+  // Whole-word match (accent-aware, optional plural) so "eau" does not match inside "beaucoup"
+  const hasTerm = (hay, term) => new RegExp('(?<![\\p{L}\\p{N}])' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + 's?(?![\\p{L}\\p{N}])', 'u').test(hay);
   const ledger = []; // {label, note, pts}
   let score = 100;
   const add = (label, note, pts) => { score += pts; ledger.push({ label, note, pts }); };
@@ -584,7 +589,7 @@ function evaluateDashboard() {
   const matched = []; const seen = new Set(); let gutDisrupted = false;
   INGREDIENT_DATABASE.forEach(rule => {
     for (const term of [rule.name, ...rule.aliases]) {
-      if (text.includes(term.toLowerCase()) && !seen.has(rule.name)) {
+      if (hasTerm(text, term.toLowerCase()) && !seen.has(rule.name)) {
         seen.add(rule.name); matched.push(rule);
         if (rule.type === 'bad' && (rule.category.includes('Emulsifier') || rule.category.includes('Gut'))) gutDisrupted = true;
         break;
@@ -595,7 +600,7 @@ function evaluateDashboard() {
   if (bad.length) add('Harmful additives', `${bad.length} found × 14 points`, -14 * bad.length);
   if (caution.length) add('Cautionary ingredients', `${caution.length} found × 4 points`, -4 * caution.length);
 
-  const official = text.includes('élevé en') || text.includes('high in');
+  const official = fullText.includes('élevé en') || fullText.includes('high in');
   if (official) add('Health Canada warning symbol', 'High in saturated fat and/or sugars', -15);
 
   const raw = score;
