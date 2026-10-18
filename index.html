@@ -1,867 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NutriScan — Weight Loss & Ingredient Health Scale</title>
-  <!-- Tesseract.js for In-Browser OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f4f3e" />
+<title>NutriScan — Label Health Scale</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --surface-2:#eef3f0; --ink:#12201b; --muted:#5b6b64; --line:#dbe4df;
+  --brand:#0f4f3e; --brand-ink:#ffffff; --brand-soft:#dcefe7;
+  --good:#1f9d6b; --good-bg:#e4f5ec; --good-ink:#0b5a3b;
+  --warn:#d98a0b; --warn-bg:#fdf1d9; --warn-ink:#7a4a05;
+  --bad:#d6403a; --bad-bg:#fbe6e4; --bad-ink:#8a1f1a;
+  --shadow:0 1px 2px rgba(18,32,27,.06),0 6px 20px -8px rgba(18,32,27,.12);
+  --r-lg:22px; --r-md:14px; --r-sm:8px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1512; --surface:#131f1b; --surface-2:#192823; --ink:#e7f0ec; --muted:#93a69d; --line:#243630;
+    --brand:#53c79d; --brand-ink:#062a1f; --brand-soft:#173a2e;
+    --good:#3ccf93; --good-bg:#12362a; --good-ink:#8ff0c3;
+    --warn:#f0b04a; --warn-bg:#3a2c10; --warn-ink:#f6cf8a;
+    --bad:#ff7a73; --bad-bg:#3e1b19; --bad-ink:#ffb4af;
+    --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1512; --surface:#131f1b; --surface-2:#192823; --ink:#e7f0ec; --muted:#93a69d; --line:#243630;
+  --brand:#53c79d; --brand-ink:#062a1f; --brand-soft:#173a2e;
+  --good:#3ccf93; --good-bg:#12362a; --good-ink:#8ff0c3;
+  --warn:#f0b04a; --warn-bg:#3a2c10; --warn-ink:#f6cf8a;
+  --bad:#ff7a73; --bad-bg:#3e1b19; --bad-ink:#ffb4af;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;line-height:1.55;font-size:16px;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3,.display{font-family:'Bricolage Grotesque','Figtree',sans-serif;letter-spacing:-.02em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding:0 18px}
 
-  <style>
-    :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      
-      --color-green: #10b981;
-      --color-green-bg: #ecfdf5;
-      --color-amber: #f59e0b;
-      --color-amber-bg: #fffbeb;
-      --color-red: #ef4444;
-      --color-red-bg: #fef2f2;
-      --color-primary: #4f46e5;
-    }
+/* Top bar */
+.topbar{position:sticky;top:0;z-index:20;background:var(--brand);color:var(--brand-ink);
+  padding-top:env(safe-area-inset-top,0px)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.2rem}
+.logo svg{width:26px;height:26px}
+.top-actions{display:flex;gap:8px}
+.icon-btn{background:rgba(255,255,255,.14);border:0;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;color:inherit}
+.icon-btn:hover{background:rgba(255,255,255,.24)}
+.icon-btn svg{width:20px;height:20px}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-    body { background: var(--bg); color: var(--text-main); padding: 1.5rem 1rem; line-height: 1.5; }
-    .container { max-width: 840px; margin: 0 auto; }
+/* Intro */
+.intro{padding:34px 0 22px}
+.intro h1{font-size:clamp(1.9rem,6vw,2.8rem);line-height:1.08;font-weight:800;max-width:15em}
+.intro p{color:var(--muted);margin-top:10px;max-width:38em}
 
-    header { text-align: center; margin-bottom: 2rem; }
-    .app-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #eef2ff; color: #4338ca;
-      font-size: 0.75rem; font-weight: 700; padding: 0.35rem 0.8rem;
-      border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;
-    }
-    header h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; color: #0f172a; }
-    header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem; }
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.card h2{font-size:1.2rem;font-weight:700}
+.card .sub{color:var(--muted);font-size:.9rem}
 
-    /* Quick Demo Buttons */
-    .demo-bar {
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem;
-    }
-    .demo-bar span { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
-    .demo-btn {
-      background: #ffffff; border: 1px solid #cbd5e1;
-      padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.8rem;
-      font-weight: 600; color: #334155; cursor: pointer; transition: 0.15s;
-    }
-    .demo-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+/* Capture */
+.step-title{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.step-dot{width:28px;height:28px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.capture-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.capture-grid{grid-template-columns:1fr}}
+.cap-btn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:var(--r-md);
+  border:1.5px solid var(--line);background:var(--surface-2);transition:border-color .15s,background .15s;width:100%}
+.cap-btn:hover{border-color:var(--brand);background:var(--brand-soft)}
+.cap-btn .ico{width:46px;height:46px;border-radius:12px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;flex-shrink:0}
+.cap-btn .ico svg{width:24px;height:24px}
+.cap-btn strong{display:block;font-size:1rem}
+.cap-btn span.d{font-size:.82rem;color:var(--muted)}
+.drop{margin-top:12px;border:1.5px dashed var(--line);border-radius:var(--r-md);padding:14px;text-align:center;color:var(--muted);font-size:.88rem;transition:.15s}
+.drop.over{border-color:var(--brand);background:var(--brand-soft);color:var(--ink)}
+.hidden-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.thumb{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(18,32,27,.8);color:#fff;font-size:14px;line-height:1}
+.btn{display:block;width:100%;padding:15px;border:0;border-radius:var(--r-md);font-weight:700;font-size:1rem;transition:.15s}
+.btn-primary{background:var(--brand);color:var(--brand-ink);margin-top:16px}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn-ghost{background:var(--surface-2);border:1px solid var(--line);margin-top:12px}
+.progress{display:none;margin-top:16px}
+.progress .bg{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress .bar{height:100%;width:0;background:var(--brand);transition:width .25s}
+.progress p{font-size:.85rem;color:var(--muted);text-align:center;margin-top:8px}
+.demo-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.demo-row span{font-size:.85rem;color:var(--muted);font-weight:600}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:7px 14px;font-size:.85rem;font-weight:600}
+.chip:hover{border-color:var(--brand);background:var(--brand-soft)}
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 20px;
-      padding: 1.75rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
-      border: 1px solid #f1f5f9;
-    }
+/* Review */
+#reviewCard{display:none}
+.name-input{width:100%;margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit}
+.macro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+.macro{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.macro label{font-size:.75rem;font-weight:600;color:var(--muted);display:block}
+.macro input{width:100%;border:0;background:transparent;color:var(--ink);font:700 1.25rem 'Bricolage Grotesque',sans-serif;outline:none;margin-top:2px}
+.macro:focus-within{border-color:var(--brand)}
+.link-btn{background:none;border:0;color:var(--brand);font-weight:700;font-size:.9rem;margin-top:14px;display:inline-flex;gap:6px;align-items:center}
+textarea{width:100%;height:110px;margin-top:8px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-size:.88rem;resize:vertical}
 
-    .dropzone {
-      border: 2px dashed #cbd5e1;
-      border-radius: 16px;
-      padding: 2.25rem 1.5rem;
-      text-align: center;
-      cursor: pointer;
-      display: block;
-      background: #f8fafc;
-      transition: all 0.2s ease;
-    }
-    .dropzone:hover { border-color: var(--color-primary); background: #f5f3ff; }
-    .dropzone input { display: none; }
-    .drop-icon {
-      width: 52px; height: 52px; margin: 0 auto 0.75rem;
-      background: #ede9fe; color: var(--color-primary);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    }
-    .drop-icon svg { width: 28px; height: 28px; }
+/* Results */
+#results{display:none;scroll-margin-top:70px}
+.fop{display:none;gap:12px;align-items:center;background:var(--bad-bg);color:var(--bad-ink);border:1px solid var(--bad);border-radius:var(--r-md);padding:14px 16px;margin-bottom:18px}
+.fop b{background:var(--bad);color:#fff;border-radius:6px;padding:3px 9px;font-size:.8rem;flex-shrink:0}
+.fop p{font-size:.88rem}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+@media(max-width:560px){.hero{grid-template-columns:1fr;text-align:center;justify-items:center}}
+.gauge{position:relative;width:150px;height:150px}
+.gauge svg{width:150px;height:150px;transform:rotate(-90deg)}
+.g-bg{fill:none;stroke:var(--surface-2);stroke-width:11}
+.g-fill{fill:none;stroke-width:11;stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:314;transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1),stroke .3s}
+.g-text{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.g-score{font:800 2.8rem/1 'Bricolage Grotesque',sans-serif}
+.g-grade{font-size:.8rem;font-weight:700;color:var(--muted);margin-top:4px}
+.product-name{font-size:.9rem;color:var(--muted);font-weight:600}
+.verdict h2{font-size:1.6rem;font-weight:800;line-height:1.15;margin:2px 0 8px}
+.verdict p{color:var(--muted);font-size:.95rem}
+.scale{display:flex;height:8px;border-radius:99px;overflow:hidden;margin-top:16px;position:relative;width:100%}
+.scale i{flex:1}
+.scale-marker{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transition:left .9s}
+.scale-labels{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:6px;width:100%}
 
-    .thumbnails { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
-    .thumb-item {
-      position: relative; width: 75px; height: 75px;
-      border-radius: 12px; overflow: hidden; border: 2px solid #e2e8f0;
-    }
-    .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
-    .thumb-remove {
-      position: absolute; top: 3px; right: 3px;
-      background: rgba(239, 68, 68, 0.9); color: white;
-      border: none; border-radius: 50%; width: 20px; height: 20px;
-      cursor: pointer; font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
-    }
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.tile{border-radius:var(--r-md);padding:14px 16px;border:1px solid transparent}
+.tile.good{background:var(--good-bg);color:var(--good-ink);border-color:var(--good)}
+.tile.caution{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn)}
+.tile.bad{background:var(--bad-bg);color:var(--bad-ink);border-color:var(--bad)}
+.tile .t{font-size:.82rem;font-weight:600;opacity:.9}
+.tile .v{font:700 1.3rem 'Bricolage Grotesque',sans-serif;margin-top:2px}
+.tile .d{font-size:.8rem;margin-top:2px;opacity:.9}
 
-    .btn {
-      width: 100%; padding: 0.95rem; border: none; border-radius: 12px;
-      font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s;
-    }
-    .btn-primary { background: linear-gradient(135deg, #4f46e5, #3730a3); color: white; margin-top: 1rem; }
-    .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); }
-    .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
+.report p{margin-top:12px;font-size:.97rem}
+.report p:first-of-type{margin-top:6px}
+.findings{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+@media(max-width:620px){.findings{grid-template-columns:1fr}}
+.find-col{border-radius:var(--r-md);padding:14px 16px}
+.find-col.pos{background:var(--good-bg);color:var(--good-ink)}
+.find-col.neg{background:var(--bad-bg);color:var(--bad-ink)}
+.find-col h3{font-size:.95rem;margin-bottom:6px}
+.find-col ul{padding-left:18px;font-size:.88rem}
+.find-col li{margin-top:4px}
 
-    .progress-box { margin-top: 1.25rem; display: none; }
-    .progress-bar-bg { background: #e2e8f0; height: 8px; border-radius: 99px; overflow: hidden; }
-    .progress-bar { width: 0%; height: 100%; background: var(--color-primary); transition: width 0.3s; }
-    .progress-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center; font-weight: 600; }
+/* Charts */
+.chart{display:flex;align-items:flex-end;justify-content:space-around;gap:10px;height:230px;margin-top:20px;padding:0 4px;
+  border-bottom:1.5px solid var(--line);position:relative;
+  background:repeating-linear-gradient(to top,transparent 0,transparent 56px,var(--line) 56px,var(--line) 57px)}
+.col{flex:1;max-width:96px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.col .val{font-weight:700;font-size:.82rem;margin-bottom:4px;white-space:nowrap}
+.col .stick{width:100%;border-radius:8px 8px 0 0;height:0;transition:height .8s cubic-bezier(.2,.8,.2,1);min-height:0}
+.labels{display:flex;justify-content:space-around;gap:10px;padding:0 4px;margin-top:8px}
+.labels span{flex:1;max-width:96px;text-align:center;font-size:.75rem;font-weight:600;color:var(--muted);line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.chart-note{font-size:.8rem;color:var(--muted);margin-top:10px}
+.empty{padding:28px 10px;text-align:center;color:var(--muted);font-size:.9rem}
 
-    .collapsible-toggle {
-      background: none; border: none; font-size: 0.85rem;
-      font-weight: 700; color: var(--color-primary); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 5px; margin-top: 0.75rem;
-    }
-    .macro-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
-      gap: 10px; margin-top: 1rem;
-    }
-    .macro-field {
-      background: #f8fafc; border: 1px solid #e2e8f0;
-      padding: 0.65rem 0.85rem; border-radius: 12px;
-    }
-    .macro-field label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; }
-    .macro-field input { width: 100%; border: none; background: transparent; font-size: 1.1rem; font-weight: 800; color: #0f172a; outline: none; margin-top: 2px; }
-    textarea {
-      width: 100%; height: 90px; padding: 0.75rem;
-      border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem; resize: vertical;
-    }
+/* Limits */
+.limit{margin-top:14px}
+.limit-h{display:flex;justify-content:space-between;font-weight:600;font-size:.9rem;margin-bottom:5px}
+.track{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px;transition:width .6s}
 
-    #resultsSection { display: none; }
+/* Ledger */
+.ledger{margin-top:12px;border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.row small{display:block;color:var(--muted);font-size:.78rem}
+.pts{font:700 1rem 'Bricolage Grotesque',sans-serif;white-space:nowrap}
+.pts.neg{color:var(--bad)} .pts.pos{color:var(--good)}
+.row.total{border-bottom:0;font-weight:700}
 
-    .hero-score-card {
-      display: flex; align-items: center; gap: 2rem;
-      padding: 1.5rem; border-radius: 20px; margin-bottom: 1.5rem;
-      background: #ffffff; border: 1px solid #f1f5f9;
-    }
-    @media(max-width: 640px) {
-      .hero-score-card { flex-direction: column; text-align: center; gap: 1rem; }
-    }
+/* Ingredients */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 14px;font-size:.85rem;font-weight:600}
+.tab[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.mix{display:flex;height:10px;border-radius:99px;overflow:hidden;margin-top:12px;background:var(--surface-2)}
+.mix i{transition:flex .6s}
+.ing-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.ing{display:flex;justify-content:space-between;gap:14px;padding:13px 14px;border-radius:12px;background:var(--surface-2);border-left:4px solid var(--line);font-size:.9rem}
+.ing.bad{border-left-color:var(--bad)} .ing.caution{border-left-color:var(--warn)} .ing.good{border-left-color:var(--good)}
+.ing strong{text-transform:capitalize}
+.ing .cat{display:inline-block;font-size:.72rem;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:0 7px;margin-left:6px}
+.ing p{color:var(--muted);font-size:.82rem;margin-top:3px}
+.pill{align-self:flex-start;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;flex-shrink:0}
+.pill.bad{background:var(--bad-bg);color:var(--bad-ink)} .pill.caution{background:var(--warn-bg);color:var(--warn-ink)} .pill.good{background:var(--good-bg);color:var(--good-ink)}
 
-    .gauge-wrapper { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
-    .gauge-wrapper svg { transform: rotate(-90deg); width: 130px; height: 130px; }
-    .gauge-bg { fill: none; stroke: #f1f5f9; stroke-width: 10; }
-    .gauge-fill {
-      fill: none; stroke-width: 10; stroke-linecap: round;
-      stroke-dasharray: 314; stroke-dashoffset: 314;
-      transition: stroke-dashoffset 0.8s ease-in-out, stroke 0.4s ease;
-    }
-    .gauge-center-text {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%); text-align: center;
-    }
-    .gauge-score { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
-    .gauge-grade { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
-
-    .verdict-info h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.35rem; }
-    .verdict-info p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.45; }
-
-    .official-alert {
-      display: none; align-items: center; gap: 12px;
-      background: #111827; color: #ffffff;
-      padding: 1rem 1.25rem; border-radius: 14px; margin-bottom: 1.5rem;
-    }
-    .official-alert-badge {
-      background: #ef4444; color: white; font-weight: 800; font-size: 0.75rem;
-      padding: 0.3rem 0.6rem; border-radius: 6px; text-transform: uppercase;
-    }
-
-    .metric-tiles {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px; margin-bottom: 1.5rem;
-    }
-    .metric-tile {
-      padding: 1rem; border-radius: 16px; border: 1px solid transparent;
-      display: flex; flex-direction: column; justify-content: space-between;
-    }
-    .metric-tile.status-good { background: var(--color-green-bg); border-color: #bbf7d0; color: #065f46; }
-    .metric-tile.status-caution { background: var(--color-amber-bg); border-color: #fde68a; color: #92400e; }
-    .metric-tile.status-bad { background: var(--color-red-bg); border-color: #fecaca; color: #991b1b; }
-
-    .tile-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
-    .tile-val { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
-    .tile-desc { font-size: 0.75rem; margin-top: 4px; opacity: 0.85; font-weight: 500; }
-
-    .traffic-section { margin-bottom: 1.5rem; }
-    .traffic-row { margin-bottom: 0.85rem; }
-    .traffic-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
-    .traffic-bar-bg { height: 10px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-    .traffic-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
-
-    .ingredient-list { display: flex; flex-direction: column; gap: 8px; margin-top: 0.75rem; }
-    .ing-card {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 1rem; padding: 0.85rem 1rem; border-radius: 12px; background: #f8fafc;
-      border: 1px solid #e2e8f0; font-size: 0.85rem;
-    }
-    .ing-card.bad { border-left: 4px solid var(--color-red); background: #fffafb; }
-    .ing-card.caution { border-left: 4px solid var(--color-amber); background: #fffdfa; }
-    .ing-card.good { border-left: 4px solid var(--color-green); background: #fafdfb; }
-
-    .ing-pill {
-      font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.55rem;
-      border-radius: 6px; text-transform: uppercase; flex-shrink: 0;
-    }
-    .ing-pill.bad { background: #fee2e2; color: #b91c1c; }
-    .ing-pill.caution { background: #fef3c7; color: #b45309; }
-    .ing-pill.good { background: #dcfce7; color: #15803d; }
-
-    .action-box {
-      border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;
-      background: linear-gradient(135deg, #f8fafc, #edf2f7); border: 1px solid #cbd5e1;
-    }
-    .action-box h4 { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin-bottom: 0.25rem; }
-    .action-box p { font-size: 0.85rem; color: #475569; }
-  </style>
+.advice{margin-top:16px;border-radius:var(--r-md);padding:16px 18px;background:var(--brand-soft)}
+.advice h3{font-size:1rem;margin-bottom:4px}
+.advice p{font-size:.92rem}
+footer{color:var(--muted);font-size:.78rem;text-align:center;padding:10px 0 34px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
 
-<div class="container">
-  <header>
-    <div class="app-badge">Obesity & Metabolic Health Lab</div>
-    <h1>NutriScan Label Health Scale</h1>
-    <p>130+ Additive Rules · Hidden Sugars · Emulsifiers · Health Canada FOP Warnings</p>
-  </header>
-
-  <!-- Quick Demo Buttons -->
-  <div class="demo-bar">
-    <span>Instant Demo Presets:</span>
-    <button class="demo-btn" onclick="loadSample('icecream')">🍦 Ice Cream (Sat Fat, Sugar, Polysorbate 80)</button>
-    <button class="demo-btn" onclick="loadSample('mayo')">🥫 Spicy Mayo (Seed Oil, EDTA, Sorbate)</button>
-    <button class="demo-btn" onclick="loadSample('ketchup')">🍅 Ketchup (Liquid Sugar spike)</button>
-  </div>
-
-  <!-- Upload Card -->
-  <div class="card">
-    <label class="dropzone" id="dropArea">
-      <div class="drop-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-1V7a5 5 0 0 0-5-5zm-3 5a3 3 0 0 1 6 0v3H9V7zm3 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
-      </div>
-      <p style="font-weight: 700; font-size: 1.05rem;">Snap or upload package photos</p>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 3px;">
-        (Select Nutrition Facts and Ingredients panel photos)
-      </p>
-      <input type="file" id="fileInput" accept="image/*" capture="environment" multiple />
-    </label>
-
-    <div class="thumbnails" id="thumbContainer"></div>
-
-    <div class="progress-box" id="progressBox">
-      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="progress-text" id="progressText">Analyzing labels...</div>
+<header class="topbar">
+  <div class="wrap">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M8 12h8M8 9h8M8 15h5"/></svg>
+      NutriScan
     </div>
-
-    <button class="btn btn-primary" id="scanBtn" disabled>Scan & Analyze Product</button>
-  </div>
-
-  <!-- Editable Review -->
-  <div class="card" id="reviewCard" style="display:none;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="font-size: 1rem; font-weight: 800;">Scanned Nutrition Values (Per Serving)</h3>
-      <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Editable</span>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
     </div>
-    
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Know what’s really in your food.</h1>
+    <p>Scan the nutrition facts and ingredient list. NutriScan checks 130+ additive and sweetener rules, flags hidden sugars, and grades the product for weight loss.</p>
+  </section>
+
+  <!-- Step 1: capture -->
+  <section class="card" aria-labelledby="s1">
+    <div class="step-title"><div class="step-dot">1</div><h2 id="s1">Add your label photos</h2></div>
+    <div class="capture-grid">
+      <button class="cap-btn" id="camBtn" type="button">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+        <span><strong>Take a photo</strong><span class="d">Open the camera</span></span>
+      </button>
+      <button class="cap-btn" id="libBtn" type="button">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 9"/></svg></span>
+        <span><strong>Upload from device</strong><span class="d">Choose one or more images</span></span>
+      </button>
+    </div>
+    <input class="hidden-input" type="file" id="camInput" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true" />
+    <input class="hidden-input" type="file" id="libInput" accept="image/*" multiple tabindex="-1" aria-hidden="true" />
+    <div class="drop" id="dropArea">Or drag and drop images here. Add both the nutrition facts and ingredients panels.</div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="progress" id="progress"><div class="bg"><div class="bar" id="pbar"></div></div><p id="ptext">Reading labels…</p></div>
+    <button class="btn btn-primary" id="scanBtn" disabled>Scan and grade product</button>
+
+    <div class="demo-row">
+      <span>No label handy? Try an example:</span>
+      <button class="chip" onclick="loadSample('icecream')">Chocolate ice cream</button>
+      <button class="chip" onclick="loadSample('mayo')">Spicy mayo</button>
+      <button class="chip" onclick="loadSample('ketchup')">Ketchup</button>
+    </div>
+  </section>
+
+  <!-- Step 2: review -->
+  <section class="card" id="reviewCard" aria-labelledby="s2">
+    <div class="step-title"><div class="step-dot">2</div><h2 id="s2">Check the scanned values</h2></div>
+    <p class="sub">Per serving. Fix anything the scan misread, then recalculate.</p>
+    <input class="name-input" id="productName" type="text" placeholder="Product name (optional)" maxlength="60" />
     <div class="macro-grid">
-      <div class="macro-field"><label>Calories</label><input type="number" id="inpCalories" value="0"></div>
-      <div class="macro-field"><label>Sugars (g)</label><input type="number" id="inpSugar" value="0"></div>
-      <div class="macro-field"><label>Sat Fat (g)</label><input type="number" id="inpSatFat" value="0"></div>
-      <div class="macro-field"><label>Sodium (mg)</label><input type="number" id="inpSodium" value="0"></div>
-      <div class="macro-field"><label>Protein (g)</label><input type="number" id="inpProtein" value="0"></div>
-      <div class="macro-field"><label>Fibre (g)</label><input type="number" id="inpFibre" value="0"></div>
+      <div class="macro"><label for="inpCalories">Calories</label><input type="number" id="inpCalories" value="0" min="0" inputmode="decimal"></div>
+      <div class="macro"><label for="inpSugar">Sugars (g)</label><input type="number" id="inpSugar" value="0" min="0" inputmode="decimal"></div>
+      <div class="macro"><label for="inpSatFat">Sat fat (g)</label><input type="number" id="inpSatFat" value="0" min="0" inputmode="decimal"></div>
+      <div class="macro"><label for="inpSodium">Sodium (mg)</label><input type="number" id="inpSodium" value="0" min="0" inputmode="decimal"></div>
+      <div class="macro"><label for="inpProtein">Protein (g)</label><input type="number" id="inpProtein" value="0" min="0" inputmode="decimal"></div>
+      <div class="macro"><label for="inpFibre">Fibre (g)</label><input type="number" id="inpFibre" value="0" min="0" inputmode="decimal"></div>
+    </div>
+    <button class="link-btn" id="ingToggle" aria-expanded="false"><span id="ingIcon">▸</span> View or edit ingredient text</button>
+    <div id="ingBox" style="display:none"><textarea id="rawText" aria-label="Scanned ingredient text"></textarea></div>
+    <button class="btn btn-ghost" id="recalcBtn">Recalculate grade</button>
+  </section>
+
+  <!-- Results -->
+  <section id="results" aria-live="polite">
+    <div class="fop" id="fop">
+      <b>Warning</b>
+      <div><strong>Official front-of-package warning found</strong>
+        <p>Health Canada symbol detected: “Élevé en Gras sat. / Sucres” (high in saturated fat and sugars).</p></div>
     </div>
 
-    <button class="collapsible-toggle" onclick="toggleIngText()">
-      <span id="ingToggleIcon">▸</span> View / Edit Scanned Ingredient Text
-    </button>
-    <div id="ingTextContainer" style="display: none;">
-      <textarea id="rawText"></textarea>
-    </div>
-
-    <button class="btn btn-primary" style="background:#0f172a; margin-top: 1rem;" id="recalculateBtn">Re-Calculate Health Grade</button>
-  </div>
-
-  <!-- High-Impact Colorful Results -->
-  <div id="resultsSection">
-    
-    <!-- Health Canada Warning Banner -->
-    <div class="official-alert" id="officialAlert">
-      <div class="official-alert-badge">Warning</div>
-      <div>
-        <strong style="font-size:0.9rem;">Official Front-of-Package Alert Detected!</strong>
-        <p style="font-size:0.8rem; opacity:0.9; margin-top:2px;">Health Canada warning symbol: "Élevé en Gras sat. / Sucres" (High in Saturated Fat & Sugars).</p>
-      </div>
-    </div>
-
-    <!-- Hero Score & Grade Card -->
-    <div class="card hero-score-card">
-      <div class="gauge-wrapper">
-        <svg viewBox="0 0 120 120">
-          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
-          <circle class="gauge-fill" id="gaugeCircle" cx="60" cy="60" r="50"></circle>
-        </svg>
-        <div class="gauge-center-text">
-          <div class="gauge-score" id="scoreNum">0</div>
-          <div class="gauge-grade" id="gradeLetter">GRADE</div>
-        </div>
-      </div>
-      <div class="verdict-info">
-        <h2 id="verdictTitle">Analyzing...</h2>
-        <p id="verdictSubtitle">Nutritional impact and ultra-processed food additive evaluation.</p>
-      </div>
-    </div>
-
-    <!-- 4-Pillar Colorful Metric Tiles -->
-    <div class="metric-tiles">
-      <div class="metric-tile" id="tileInsulin">
-        <div>
-          <div class="tile-title">Insulin Spike Risk</div>
-          <div class="tile-val" id="valInsulin">--</div>
-        </div>
-        <div class="tile-desc" id="descInsulin">Simple sugars & syrups</div>
-      </div>
-      <div class="metric-tile" id="tileDensity">
-        <div>
-          <div class="tile-title">Caloric Density</div>
-          <div class="tile-val" id="valDensity">--</div>
-        </div>
-        <div class="tile-desc" id="descDensity">Calories per portion</div>
-      </div>
-      <div class="metric-tile" id="tileGut">
-        <div>
-          <div class="tile-title">Gut Barrier Safety</div>
-          <div class="tile-val" id="valGut">--</div>
-        </div>
-        <div class="tile-desc" id="descGut">Emulsifier/chemical status</div>
-      </div>
-      <div class="metric-tile" id="tileSatiety">
-        <div>
-          <div class="tile-title">Satiety Index</div>
-          <div class="tile-val" id="valSatiety">--</div>
-        </div>
-        <div class="tile-desc" id="descSatiety">Protein & fiber fullness</div>
-      </div>
-    </div>
-
-    <!-- Nutrient Traffic Light Sliders -->
-    <div class="card traffic-section">
-      <h3 style="font-size: 1rem; font-weight: 800; margin-bottom: 1rem;">Nutritional Limits for Obesity & Weight Loss</h3>
-
-      <div class="traffic-row">
-        <div class="traffic-header">
-          <span>Sugars (<span id="txtSugar">0</span>g)</span>
-          <span id="badgeSugar" style="font-size:0.75rem; text-transform:uppercase;">Low</span>
-        </div>
-        <div class="traffic-bar-bg"><div class="traffic-bar-fill" id="barSugar"></div></div>
-      </div>
-
-      <div class="traffic-row">
-        <div class="traffic-header">
-          <span>Saturated Fat (<span id="txtSatFat">0</span>g)</span>
-          <span id="badgeSatFat" style="font-size:0.75rem; text-transform:uppercase;">Low</span>
-        </div>
-        <div class="traffic-bar-bg"><div class="traffic-bar-fill" id="barSatFat"></div></div>
-      </div>
-
-      <div class="traffic-row">
-        <div class="traffic-header">
-          <span>Calories (<span id="txtCal">0</span> kcal)</span>
-          <span id="badgeCal" style="font-size:0.75rem; text-transform:uppercase;">Low</span>
-        </div>
-        <div class="traffic-bar-bg"><div class="traffic-bar-fill" id="barCal"></div></div>
-      </div>
-
-      <div class="traffic-row">
-        <div class="traffic-header">
-          <span>Sodium (<span id="txtSodium">0</span> mg)</span>
-          <span id="badgeSodium" style="font-size:0.75rem; text-transform:uppercase;">Low</span>
-        </div>
-        <div class="traffic-bar-bg"><div class="traffic-bar-fill" id="barSodium"></div></div>
-      </div>
-    </div>
-
-    <!-- Breakdown of Detected Ingredients -->
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size: 1rem; font-weight: 800;">Detected Ingredients & Additive Risk</h3>
-        <span id="detectedCount" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">0 Found</span>
+      <div class="hero">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120"><circle class="g-bg" cx="60" cy="60" r="50"/><circle class="g-fill" id="gaugeCircle" cx="60" cy="60" r="50"/></svg>
+          <div class="g-text"><div class="g-score" id="scoreNum">0</div><div class="g-grade" id="gradeLetter">GRADE</div></div>
+        </div>
+        <div class="verdict">
+          <div class="product-name" id="pName"></div>
+          <h2 id="verdictTitle">Analyzing…</h2>
+          <p id="verdictSub"></p>
+        </div>
       </div>
-      <p style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">Evaluated against metabolic, insulin, inflammatory, and gut-barrier health criteria.</p>
-      <div class="ingredient-list" id="ingListContainer"></div>
-
-      <!-- Actionable Advice -->
-      <div class="action-box">
-        <h4 id="actionTitle">Weight-Loss Guidance</h4>
-        <p id="actionBody">Evaluating...</p>
+      <div class="scale" aria-hidden="true">
+        <i style="background:var(--bad)"></i><i style="background:#e0732f"></i><i style="background:var(--warn)"></i><i style="background:#8cc152"></i><i style="background:var(--good)"></i>
+        <div class="scale-marker" id="marker" style="left:0"></div>
       </div>
+      <div class="scale-labels" aria-hidden="true"><span>Avoid</span><span>Portion caution</span><span>Good</span><span>Excellent</span></div>
     </div>
 
-  </div>
-</div>
+    <div class="tiles">
+      <div class="tile" id="tileInsulin"><div class="t">Insulin spike risk</div><div class="v" id="valInsulin">--</div><div class="d" id="descInsulin"></div></div>
+      <div class="tile" id="tileDensity"><div class="t">Caloric density</div><div class="v" id="valDensity">--</div><div class="d" id="descDensity"></div></div>
+      <div class="tile" id="tileGut"><div class="t">Gut barrier safety</div><div class="v" id="valGut">--</div><div class="d" id="descGut"></div></div>
+      <div class="tile" id="tileSatiety"><div class="t">Satiety index</div><div class="v" id="valSatiety">--</div><div class="d" id="descSatiety"></div></div>
+    </div>
+
+    <div class="card report">
+      <div class="card-head"><h2>Product report</h2><span class="sub">Based on your scan</span></div>
+      <p id="repOverview"></p>
+      <p id="repNutrition"></p>
+      <p id="repIngredients"></p>
+      <div class="findings">
+        <div class="find-col pos"><h3>What works</h3><ul id="listPos"></ul></div>
+        <div class="find-col neg"><h3>What to watch</h3><ul id="listNeg"></ul></div>
+      </div>
+      <div class="advice"><h3 id="actionTitle">Weight-loss guidance</h3><p id="actionBody"></p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Top 5 reasons for the score</h2><span class="sub">Points lost</span></div>
+      <div id="chartLoss"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>One serving vs. daily reference</h2><span class="sub">% of a typical day</span></div>
+      <div id="chartDaily"></div>
+      <p class="chart-note">References: sugars 50 g, saturated fat 20 g, sodium 2,300 mg, calories 2,000, protein 50 g, fibre 28 g.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Limits for weight loss</h2></div>
+      <div id="limits"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>How the score was calculated</h2><span class="sub">Starts at 100</span></div>
+      <div class="ledger" id="ledger"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ingredients and additives</h2><span class="sub" id="detectedCount">0 detected</span></div>
+      <p class="sub">Checked against metabolic, insulin, inflammatory and gut-barrier criteria.</p>
+      <div class="mix" id="mix" aria-hidden="true"></div>
+      <div class="tabs" id="tabs" role="group" aria-label="Filter ingredients"></div>
+      <div class="ing-list" id="ingList"></div>
+    </div>
+  </section>
+
+  <footer>NutriScan is an educational tool, not medical advice. OCR can misread labels, so always check the values above.</footer>
+</main>
 
 <script>
-  // =========================================================================
-  // EXTENSIVE 130+ INGREDIENT & ADDITIVE DATABASE
-  // (Includes English & French terms for Canadian Label Support)
-  // =========================================================================
-  const INGREDIENT_DATABASE = [
-    // ---------------------------------------------------------------------
-    // 1. HIDDEN SUGARS, SYRUPS & REFINED HIGH-GLYCEMIC SWEETENERS (BAD)
-    // ---------------------------------------------------------------------
-    { name: "high fructose corn syrup", aliases: ["high-fructose corn syrup", "hfcs", "sirop de maïs à haute teneur en fructose", "glucose-fructose"], type: "bad", category: "Sugar / Metabolic", reason: "Directly causes hepatic de novo lipogenesis (fatty liver) and increases visceral fat storage." },
-    { name: "liquid sugar", aliases: ["sucre liquide", "sirop de sucre"], type: "bad", category: "Sugar / Metabolic", reason: "Pure liquid sucrose; bypasses satiety hormones, triggers rapid insulin surges, and shuts down lipolysis (fat burning)." },
-    { name: "glucose solids", aliases: ["glucose-fructose solids", "solides de glucose", "solides de sirop de maïs"], type: "bad", category: "Sugar / Metabolic", reason: "Dehydrated corn syrup derivative with an ultra-high glycemic index; induces acute insulin spikes." },
-    { name: "corn syrup", aliases: ["sirop de maïs", "corn syrup solids"], type: "bad", category: "Sugar / Metabolic", reason: "Refined liquid sweetener composed of glucose chains; directly halts fat oxidation." },
-    { name: "invert sugar", aliases: ["sucre inverti"], type: "bad", category: "Sugar / Metabolic", reason: "Hydrolyzed glucose and fructose blend; rapidly absorbed simple sugar." },
-    { name: "maltodextrin", aliases: ["maltodextrine"], type: "bad", category: "Sugar / Metabolic", reason: "Glycemic index (110-185) higher than pure table sugar; triggers drastic insulin surges." },
-    { name: "dextrose", aliases: ["d-glucose"], type: "bad", category: "Sugar / Metabolic", reason: "Pure glucose; immediate glycemic impact with zero fiber or micronutrients." },
-    { name: "brown rice syrup", aliases: ["sirop de riz brun"], type: "bad", category: "Sugar / Metabolic", reason: "Marketed as health food, but is nearly 100% fast-acting maltotriose and glucose." },
-    { name: "agave nectar", aliases: ["sirop d'agave", "agave syrup"], type: "bad", category: "Sugar / Metabolic", reason: "Up to 85% pure concentrated fructose; heavily taxes the liver." },
-    { name: "barley malt", aliases: ["extrait de malt d'orge", "barley malt extract"], type: "bad", category: "Sugar / Metabolic", reason: "High-maltose refined sugar; strong glycemic impact." },
-    { name: "evaporated cane juice", aliases: ["jus de canne évaporé"], type: "bad", category: "Sugar / Metabolic", reason: "Deceptive marketing alias for unrefined table sugar; still caloric sucrose." },
+// =========================================================================
+// EXTENSIVE 130+ INGREDIENT & ADDITIVE DATABASE
+// (Includes English & French terms for Canadian Label Support)
+// =========================================================================
+const INGREDIENT_DATABASE = [
+  // 1. HIDDEN SUGARS, SYRUPS & REFINED HIGH-GLYCEMIC SWEETENERS (BAD)
+  { name: "high fructose corn syrup", aliases: ["high-fructose corn syrup", "hfcs", "sirop de maïs à haute teneur en fructose", "glucose-fructose"], type: "bad", category: "Sugar / Metabolic", reason: "Directly causes hepatic de novo lipogenesis (fatty liver) and increases visceral fat storage." },
+  { name: "liquid sugar", aliases: ["sucre liquide", "sirop de sucre"], type: "bad", category: "Sugar / Metabolic", reason: "Pure liquid sucrose; bypasses satiety hormones, triggers rapid insulin surges, and shuts down lipolysis (fat burning)." },
+  { name: "glucose solids", aliases: ["glucose-fructose solids", "solides de glucose", "solides de sirop de maïs"], type: "bad", category: "Sugar / Metabolic", reason: "Dehydrated corn syrup derivative with an ultra-high glycemic index; induces acute insulin spikes." },
+  { name: "corn syrup", aliases: ["sirop de maïs", "corn syrup solids"], type: "bad", category: "Sugar / Metabolic", reason: "Refined liquid sweetener composed of glucose chains; directly halts fat oxidation." },
+  { name: "invert sugar", aliases: ["sucre inverti"], type: "bad", category: "Sugar / Metabolic", reason: "Hydrolyzed glucose and fructose blend; rapidly absorbed simple sugar." },
+  { name: "maltodextrin", aliases: ["maltodextrine"], type: "bad", category: "Sugar / Metabolic", reason: "Glycemic index (110-185) higher than pure table sugar; triggers drastic insulin surges." },
+  { name: "dextrose", aliases: ["d-glucose"], type: "bad", category: "Sugar / Metabolic", reason: "Pure glucose; immediate glycemic impact with zero fiber or micronutrients." },
+  { name: "brown rice syrup", aliases: ["sirop de riz brun"], type: "bad", category: "Sugar / Metabolic", reason: "Marketed as health food, but is nearly 100% fast-acting maltotriose and glucose." },
+  { name: "agave nectar", aliases: ["sirop d'agave", "agave syrup"], type: "bad", category: "Sugar / Metabolic", reason: "Up to 85% pure concentrated fructose; heavily taxes the liver." },
+  { name: "barley malt", aliases: ["extrait de malt d'orge", "barley malt extract"], type: "bad", category: "Sugar / Metabolic", reason: "High-maltose refined sugar; strong glycemic impact." },
+  { name: "evaporated cane juice", aliases: ["jus de canne évaporé"], type: "bad", category: "Sugar / Metabolic", reason: "Deceptive marketing alias for unrefined table sugar; still caloric sucrose." },
 
-    // ---------------------------------------------------------------------
-    // 2. INDUSTRIAL EMULSIFIERS & GUT-BARRIER DISRUPTORS (BAD)
-    // ---------------------------------------------------------------------
-    { name: "polysorbate 80", aliases: ["polyoxyethylene 20 sorbitan monooleate", "e433"], type: "bad", category: "Emulsifier / Gut", reason: "Erodes protective mucosal gut barrier in clinical trials, inducing low-grade inflammation and metabolic syndrome." },
-    { name: "polysorbate 60", aliases: ["e435"], type: "bad", category: "Emulsifier / Gut", reason: "Industrial emulsifier shown to alter gut microbiota composition and trigger systemic inflammation." },
-    { name: "carrageenan", aliases: ["carraghénane", "e407", "irish moss extract"], type: "bad", category: "Emulsifier / Gut", reason: "Sulfated polysaccharide known in research to trigger gut micro-inflammation and glucose intolerance." },
-    { name: "carboxymethylcellulose", aliases: ["cellulose gum", "gomme de cellulose", "sodium carboxymethyl cellulose", "cmc", "e466"], type: "bad", category: "Emulsifier / Gut", reason: "Shown in human clinical studies to thin gut mucus and alter the intestinal microbiome." },
-    { name: "mono- and diglycerides", aliases: ["mono- et diglycérides", "soy mono- and diglycerides", "mono and diglycerides of fatty acids", "e471", "distilled monoglycerides"], type: "bad", category: "Emulsifier / Gut", reason: "Industrial emulsifier that may contain hidden trans-fats; alters gut microbiota and metabolic signaling." },
-    { name: "datem", aliases: ["diacetyl tartaric acid esters of mono- and diglycerides", "e472e"], type: "bad", category: "Emulsifier / UPF", reason: "Synthetic dough conditioner and emulsifier found exclusively in ultra-processed food (NOVA 4)." },
-    { name: "sodium stearoyl lactylate", aliases: ["stéaroyl-2-lactylate de sodium", "ssl", "e481"], type: "bad", category: "Emulsifier / UPF", reason: "Industrial emulsifier used to extend shelf-life; synthetic food additive." },
-    { name: "polyglycerol polyricinoleate", aliases: ["pgpr", "e476"], type: "bad", category: "Emulsifier / UPF", reason: "Castor-bean derived industrial emulsifier used as a cheap synthetic replacement for cocoa butter." },
+  // 2. INDUSTRIAL EMULSIFIERS & GUT-BARRIER DISRUPTORS (BAD)
+  { name: "polysorbate 80", aliases: ["polyoxyethylene 20 sorbitan monooleate", "e433"], type: "bad", category: "Emulsifier / Gut", reason: "Erodes protective mucosal gut barrier in clinical trials, inducing low-grade inflammation and metabolic syndrome." },
+  { name: "polysorbate 60", aliases: ["e435"], type: "bad", category: "Emulsifier / Gut", reason: "Industrial emulsifier shown to alter gut microbiota composition and trigger systemic inflammation." },
+  { name: "carrageenan", aliases: ["carraghénane", "e407", "irish moss extract"], type: "bad", category: "Emulsifier / Gut", reason: "Sulfated polysaccharide known in research to trigger gut micro-inflammation and glucose intolerance." },
+  { name: "carboxymethylcellulose", aliases: ["cellulose gum", "gomme de cellulose", "sodium carboxymethyl cellulose", "cmc", "e466"], type: "bad", category: "Emulsifier / Gut", reason: "Shown in human clinical studies to thin gut mucus and alter the intestinal microbiome." },
+  { name: "mono- and diglycerides", aliases: ["mono- et diglycérides", "soy mono- and diglycerides", "mono and diglycerides of fatty acids", "e471", "distilled monoglycerides"], type: "bad", category: "Emulsifier / Gut", reason: "Industrial emulsifier that may contain hidden trans-fats; alters gut microbiota and metabolic signaling." },
+  { name: "datem", aliases: ["diacetyl tartaric acid esters of mono- and diglycerides", "e472e"], type: "bad", category: "Emulsifier / UPF", reason: "Synthetic dough conditioner and emulsifier found exclusively in ultra-processed food (NOVA 4)." },
+  { name: "sodium stearoyl lactylate", aliases: ["stéaroyl-2-lactylate de sodium", "ssl", "e481"], type: "bad", category: "Emulsifier / UPF", reason: "Industrial emulsifier used to extend shelf-life; synthetic food additive." },
+  { name: "polyglycerol polyricinoleate", aliases: ["pgpr", "e476"], type: "bad", category: "Emulsifier / UPF", reason: "Castor-bean derived industrial emulsifier used as a cheap synthetic replacement for cocoa butter." },
 
-    // ---------------------------------------------------------------------
-    // 3. INDUSTRIAL REFINED FATS & TRANS FATS (BAD)
-    // ---------------------------------------------------------------------
-    { name: "modified palm oil", aliases: ["huile de palme modifiée", "modified palm kernel oil"], type: "bad", category: "Refined Fat", reason: "Chemically or thermally altered saturated fat; highly atherogenic and caloric." },
-    { name: "partially hydrogenated oil", aliases: ["huile partiellement hydrogénée", "partially hydrogenated soybean oil", "partially hydrogenated cottonseed oil"], type: "bad", category: "Trans Fat", reason: "Major source of artificial trans-fat; strongly associated with visceral adiposity and cardiovascular disease." },
-    { name: "hydrogenated palm oil", aliases: ["huile de palme hydrogénée", "hydrogenated vegetable oil", "huile végétale hydrogénée"], type: "bad", category: "Refined Fat", reason: "Heavily processed industrial fat containing high concentrations of saturated fatty acids." },
-    { name: "shortening", aliases: ["graisse végétale", "vegetable shortening"], type: "bad", category: "Refined Fat", reason: "Ultra-processed industrial fat solid; high caloric density with negative lipid profile impacts." },
+  // 3. INDUSTRIAL REFINED FATS & TRANS FATS (BAD)
+  { name: "modified palm oil", aliases: ["huile de palme modifiée", "modified palm kernel oil"], type: "bad", category: "Refined Fat", reason: "Chemically or thermally altered saturated fat; highly atherogenic and caloric." },
+  { name: "partially hydrogenated oil", aliases: ["huile partiellement hydrogénée", "partially hydrogenated soybean oil", "partially hydrogenated cottonseed oil"], type: "bad", category: "Trans Fat", reason: "Major source of artificial trans-fat; strongly associated with visceral adiposity and cardiovascular disease." },
+  { name: "hydrogenated palm oil", aliases: ["huile de palme hydrogénée", "hydrogenated vegetable oil", "huile végétale hydrogénée"], type: "bad", category: "Refined Fat", reason: "Heavily processed industrial fat containing high concentrations of saturated fatty acids." },
+  { name: "shortening", aliases: ["graisse végétale", "vegetable shortening"], type: "bad", category: "Refined Fat", reason: "Ultra-processed industrial fat solid; high caloric density with negative lipid profile impacts." },
 
-    // ---------------------------------------------------------------------
-    // 4. CHEMICAL PRESERVATIVES & SYNTHETIC DYES (BAD)
-    // ---------------------------------------------------------------------
-    { name: "calcium disodium edta", aliases: ["edta de calcium disodique", "edta disodique", "disodium edta"], type: "bad", category: "Preservative", reason: "Synthetic chelating agent used to prevent rancidity in processed condiments; synthetic chemical additive." },
-    { name: "bha", aliases: ["butylated hydroxyanisole", "hydroxyanisol butylé", "e320"], type: "bad", category: "Preservative", reason: "Synthetic phenolic preservative; classified as a suspected endocrine disruptor and possible human carcinogen." },
-    { name: "bht", aliases: ["butylated hydroxytoluene", "hydroxytoluène butylé", "e321"], type: "bad", category: "Preservative", reason: "Synthetic antioxidant preservative linked in toxicological studies to liver and endocrine issues." },
-    { name: "tbhq", aliases: ["tertiary butylhydroquinone", "tert-butylhydroquinone", "e319"], type: "bad", category: "Preservative", reason: "Petroleum-derived preservative; animal studies indicate immune and cellular stress." },
-    { name: "potassium bromate", aliases: ["bromate de potassium", "e924"], type: "bad", category: "Additive", reason: "Flour bleaching agent; classified as a Category 2B carcinogen (banned in Canada, UK, and EU)." },
-    { name: "sodium nitrite", aliases: ["nitrite de sodium", "e250"], type: "bad", category: "Preservative", reason: "Forms carcinogenic nitrosamines in gastric acid; associated with metabolic and cardiovascular risk." },
-    { name: "sodium nitrate", aliases: ["nitrate de sodium", "e251"], type: "bad", category: "Preservative", reason: "Synthetic curing agent linked to vascular dysfunction and metabolic impairment." },
-    { name: "titanium dioxide", aliases: ["dioxyde de titane", "e171"], type: "bad", category: "Additive", reason: "Food colorant banned in the EU due to genotoxicity concerns and cellular accumulation." },
-    { name: "red 40", aliases: ["allura red", "rouge allura", "e129"], type: "bad", category: "Synthetic Dye", reason: "Synthetic petroleum dye linked to gut inflammation and neurobehavioral issues." },
-    { name: "yellow 5", aliases: ["tartrazine", "jaune soleil", "e102"], type: "bad", category: "Synthetic Dye", reason: "Azo food dye associated with allergic hyperactivity and histamine release." },
-    { name: "yellow 6", aliases: ["sunset yellow", "jaune orangé s", "e110"], type: "bad", category: "Synthetic Dye", reason: "Azo food dye banned or warning-labeled in the EU due to hypersensitivity concerns." },
-    { name: "blue 1", aliases: ["brilliant blue", "bleu brillant fcf", "e133"], type: "bad", category: "Synthetic Dye", reason: "Synthetic triphenylmethane dye; non-nutritive synthetic colorant." },
+  // 4. CHEMICAL PRESERVATIVES & SYNTHETIC DYES (BAD)
+  { name: "calcium disodium edta", aliases: ["edta de calcium disodique", "edta disodique", "disodium edta"], type: "bad", category: "Preservative", reason: "Synthetic chelating agent used to prevent rancidity in processed condiments; synthetic chemical additive." },
+  { name: "bha", aliases: ["butylated hydroxyanisole", "hydroxyanisol butylé", "e320"], type: "bad", category: "Preservative", reason: "Synthetic phenolic preservative; classified as a suspected endocrine disruptor and possible human carcinogen." },
+  { name: "bht", aliases: ["butylated hydroxytoluene", "hydroxytoluène butylé", "e321"], type: "bad", category: "Preservative", reason: "Synthetic antioxidant preservative linked in toxicological studies to liver and endocrine issues." },
+  { name: "tbhq", aliases: ["tertiary butylhydroquinone", "tert-butylhydroquinone", "e319"], type: "bad", category: "Preservative", reason: "Petroleum-derived preservative; animal studies indicate immune and cellular stress." },
+  { name: "potassium bromate", aliases: ["bromate de potassium", "e924"], type: "bad", category: "Additive", reason: "Flour bleaching agent; classified as a Category 2B carcinogen (banned in Canada, UK, and EU)." },
+  { name: "sodium nitrite", aliases: ["nitrite de sodium", "e250"], type: "bad", category: "Preservative", reason: "Forms carcinogenic nitrosamines in gastric acid; associated with metabolic and cardiovascular risk." },
+  { name: "sodium nitrate", aliases: ["nitrate de sodium", "e251"], type: "bad", category: "Preservative", reason: "Synthetic curing agent linked to vascular dysfunction and metabolic impairment." },
+  { name: "titanium dioxide", aliases: ["dioxyde de titane", "e171"], type: "bad", category: "Additive", reason: "Food colorant banned in the EU due to genotoxicity concerns and cellular accumulation." },
+  { name: "red 40", aliases: ["allura red", "rouge allura", "e129"], type: "bad", category: "Synthetic Dye", reason: "Synthetic petroleum dye linked to gut inflammation and neurobehavioral issues." },
+  { name: "yellow 5", aliases: ["tartrazine", "jaune soleil", "e102"], type: "bad", category: "Synthetic Dye", reason: "Azo food dye associated with allergic hyperactivity and histamine release." },
+  { name: "yellow 6", aliases: ["sunset yellow", "jaune orangé s", "e110"], type: "bad", category: "Synthetic Dye", reason: "Azo food dye banned or warning-labeled in the EU due to hypersensitivity concerns." },
+  { name: "blue 1", aliases: ["brilliant blue", "bleu brillant fcf", "e133"], type: "bad", category: "Synthetic Dye", reason: "Synthetic triphenylmethane dye; non-nutritive synthetic colorant." },
 
-    // ---------------------------------------------------------------------
-    // 5. CAUTION: MODERATE SWEETENERS, SEED OILS, PRESERVATIVES, THICKENERS
-    // ---------------------------------------------------------------------
-    { name: "sugar", aliases: ["sucre", "cane sugar", "sucre de canne", "beet sugar", "white sugar"], type: "caution", category: "Caloric Sweetener", reason: "Standard refined sucrose; direct contributor to calorie density and insulin resistance if overconsumed." },
-    { name: "canola oil", aliases: ["huile de canola", "rapeseed oil", "huile de colza"], type: "caution", category: "Refined Oil", reason: "Heavily refined high-heat seed oil; very high calorie density (~120 kcal/tbsp) easily exceeding deficit goals." },
-    { name: "soybean oil", aliases: ["huile de soja", "soya oil"], type: "caution", category: "Refined Oil", reason: "Industrial seed oil with high omega-6 linoleic acid content; heavily refined." },
-    { name: "palm oil", aliases: ["huile de palme", "palm kernel oil"], type: "caution", category: "Refined Fat", reason: "High in saturated palmitic acid; substantial environmental and cardiovascular footprint." },
-    { name: "sunflower oil", aliases: ["huile de tournesol"], type: "caution", category: "Refined Oil", reason: "Standard refined seed oil; calorie-dense fat requiring strict portion control." },
-    { name: "corn oil", aliases: ["huile de maïs"], type: "caution", category: "Refined Oil", reason: "High omega-6 to omega-3 ratio refined vegetable oil." },
-    { name: "modified corn starch", aliases: ["amidon de maïs modifié", "modified corn and potato starch", "amidon de pomme de terre modifié", "modified starch"], type: "caution", category: "UPF Starch", reason: "Chemically modified carbohydrate filler; rapidly broken down into glucose." },
-    { name: "potato starch", aliases: ["fécule de pomme de terre", "amidon de pomme de terre"], type: "caution", category: "Starch Filler", reason: "Starchy filler; rapid digestion and conversion into glucose." },
-    { name: "tapioca starch", aliases: ["fécule de tapioca"], type: "caution", category: "Starch Filler", reason: "High-glycemic refined carbohydrate powder." },
-    { name: "modified milk ingredients", aliases: ["substances laitières modifiées"], type: "caution", category: "UPF Dairy", reason: "Industrial dairy byproducts (whey concentrates/permeates) replacing whole milk." },
-    { name: "cream", aliases: ["crème", "heavy cream"], type: "caution", category: "Dairy Fat", reason: "Natural dairy, but exceptionally high in saturated fat and calories (treat as small portion)." },
-    { name: "potassium sorbate", aliases: ["sorbate de potassium", "e202"], type: "caution", category: "Preservative", reason: "Widely used synthetic antimicrobial preservative; generally recognized as safe but synthetic." },
-    { name: "sorbic acid", aliases: ["acide sorbique", "e200"], type: "caution", category: "Preservative", reason: "Synthetic antimicrobial acid used to preserve commercial moisture." },
-    { name: "sodium benzoate", aliases: ["benzoate de sodium", "e211"], type: "caution", category: "Preservative", reason: "Preservative that can form trace benzene when combined with ascorbic acid (vitamin C)." },
-    { name: "xanthan gum", aliases: ["gomme xanthane", "e415"], type: "caution", category: "Stabilizer", reason: "Bacterial fermentation gum; harmless in tiny amounts but causes bloating/gas in higher doses." },
-    { name: "guar gum", aliases: ["gomme de guar", "e412"], type: "caution", category: "Stabilizer", reason: "Legume seed gum thickener; can cause digestive distension in sensitive individuals." },
-    { name: "soy lecithin", aliases: ["lécithine de soya", "lecithin"], type: "caution", category: "Emulsifier", reason: "Processed soybean byproduct used for uniform blending; mild caution." },
-    { name: "natural flavour", aliases: ["saveur naturelle", "arômes naturels", "natural flavors"], type: "caution", category: "Flavoring", reason: "Broad proprietary umbrella term hiding lab-derived solvent extracts." },
-    { name: "artificial flavour", aliases: ["saveur artificielle", "arôme artificiel"], type: "caution", category: "Flavoring", reason: "100% synthetic chemical flavor compounds designed to stimulate hyperpalatability." },
-    { name: "sucralose", aliases: ["splenda", "e955"], type: "caution", category: "Artificial Sweetener", reason: "Zero-calorie chlorinated sweetener; WHO recommends against non-sugar sweeteners for long-term weight reduction." },
-    { name: "aspartame", aliases: ["equal", "nutrasweet", "e951"], type: "caution", category: "Artificial Sweetener", reason: "Artificial sweetener categorized by WHO/IARC as group 2B (possibly carcinogenic); sweet cravings persist." },
-    { name: "acesulfame potassium", aliases: ["ace-k", "acesulfame k", "e950"], type: "caution", category: "Artificial Sweetener", reason: "Intense artificial sweetener often blended with sucralose to mask bitter taste." },
-    { name: "maltitol", aliases: ["sirop de maltitol"], type: "caution", category: "Sugar Alcohol", reason: "Sugar alcohol with high glycemic index (35-52); notorious for severe gastrointestinal distress." },
-    { name: "monosodium glutamate", aliases: ["msg", "glutamate monosodique", "e621"], type: "caution", category: "Excitotoxin", reason: "Potent flavor enhancer designed to promote hyperphagia (overeating beyond fullness)." },
+  // 5. CAUTION: MODERATE SWEETENERS, SEED OILS, PRESERVATIVES, THICKENERS
+  { name: "sugar", aliases: ["sucre", "cane sugar", "sucre de canne", "beet sugar", "white sugar"], type: "caution", category: "Caloric Sweetener", reason: "Standard refined sucrose; direct contributor to calorie density and insulin resistance if overconsumed." },
+  { name: "canola oil", aliases: ["huile de canola", "rapeseed oil", "huile de colza"], type: "caution", category: "Refined Oil", reason: "Heavily refined high-heat seed oil; very high calorie density (~120 kcal/tbsp) easily exceeding deficit goals." },
+  { name: "soybean oil", aliases: ["huile de soja", "soya oil"], type: "caution", category: "Refined Oil", reason: "Industrial seed oil with high omega-6 linoleic acid content; heavily refined." },
+  { name: "palm oil", aliases: ["huile de palme", "palm kernel oil"], type: "caution", category: "Refined Fat", reason: "High in saturated palmitic acid; substantial environmental and cardiovascular footprint." },
+  { name: "sunflower oil", aliases: ["huile de tournesol"], type: "caution", category: "Refined Oil", reason: "Standard refined seed oil; calorie-dense fat requiring strict portion control." },
+  { name: "corn oil", aliases: ["huile de maïs"], type: "caution", category: "Refined Oil", reason: "High omega-6 to omega-3 ratio refined vegetable oil." },
+  { name: "modified corn starch", aliases: ["amidon de maïs modifié", "modified corn and potato starch", "amidon de pomme de terre modifié", "modified starch"], type: "caution", category: "UPF Starch", reason: "Chemically modified carbohydrate filler; rapidly broken down into glucose." },
+  { name: "potato starch", aliases: ["fécule de pomme de terre", "amidon de pomme de terre"], type: "caution", category: "Starch Filler", reason: "Starchy filler; rapid digestion and conversion into glucose." },
+  { name: "tapioca starch", aliases: ["fécule de tapioca"], type: "caution", category: "Starch Filler", reason: "High-glycemic refined carbohydrate powder." },
+  { name: "modified milk ingredients", aliases: ["substances laitières modifiées"], type: "caution", category: "UPF Dairy", reason: "Industrial dairy byproducts (whey concentrates/permeates) replacing whole milk." },
+  { name: "cream", aliases: ["crème", "heavy cream"], type: "caution", category: "Dairy Fat", reason: "Natural dairy, but exceptionally high in saturated fat and calories (treat as small portion)." },
+  { name: "potassium sorbate", aliases: ["sorbate de potassium", "e202"], type: "caution", category: "Preservative", reason: "Widely used synthetic antimicrobial preservative; generally recognized as safe but synthetic." },
+  { name: "sorbic acid", aliases: ["acide sorbique", "e200"], type: "caution", category: "Preservative", reason: "Synthetic antimicrobial acid used to preserve commercial moisture." },
+  { name: "sodium benzoate", aliases: ["benzoate de sodium", "e211"], type: "caution", category: "Preservative", reason: "Preservative that can form trace benzene when combined with ascorbic acid (vitamin C)." },
+  { name: "xanthan gum", aliases: ["gomme xanthane", "e415"], type: "caution", category: "Stabilizer", reason: "Bacterial fermentation gum; harmless in tiny amounts but causes bloating/gas in higher doses." },
+  { name: "guar gum", aliases: ["gomme de guar", "e412"], type: "caution", category: "Stabilizer", reason: "Legume seed gum thickener; can cause digestive distension in sensitive individuals." },
+  { name: "soy lecithin", aliases: ["lécithine de soya", "lecithin"], type: "caution", category: "Emulsifier", reason: "Processed soybean byproduct used for uniform blending; mild caution." },
+  { name: "natural flavour", aliases: ["saveur naturelle", "arômes naturels", "natural flavors"], type: "caution", category: "Flavoring", reason: "Broad proprietary umbrella term hiding lab-derived solvent extracts." },
+  { name: "artificial flavour", aliases: ["saveur artificielle", "arôme artificiel"], type: "caution", category: "Flavoring", reason: "100% synthetic chemical flavor compounds designed to stimulate hyperpalatability." },
+  { name: "sucralose", aliases: ["splenda", "e955"], type: "caution", category: "Artificial Sweetener", reason: "Zero-calorie chlorinated sweetener; WHO recommends against non-sugar sweeteners for long-term weight reduction." },
+  { name: "aspartame", aliases: ["equal", "nutrasweet", "e951"], type: "caution", category: "Artificial Sweetener", reason: "Artificial sweetener categorized by WHO/IARC as group 2B (possibly carcinogenic); sweet cravings persist." },
+  { name: "acesulfame potassium", aliases: ["ace-k", "acesulfame k", "e950"], type: "caution", category: "Artificial Sweetener", reason: "Intense artificial sweetener often blended with sucralose to mask bitter taste." },
+  { name: "maltitol", aliases: ["sirop de maltitol"], type: "caution", category: "Sugar Alcohol", reason: "Sugar alcohol with high glycemic index (35-52); notorious for severe gastrointestinal distress." },
+  { name: "monosodium glutamate", aliases: ["msg", "glutamate monosodique", "e621"], type: "caution", category: "Excitotoxin", reason: "Potent flavor enhancer designed to promote hyperphagia (overeating beyond fullness)." },
 
-    // ---------------------------------------------------------------------
-    // 6. GOOD: WHOLE FOODS, BENEFICIAL EXTRACTS, NATURAL SATIETY
-    // ---------------------------------------------------------------------
-    { name: "water", aliases: ["eau", "aqua"], type: "good", category: "Hydration", reason: "Essential zero-calorie clean solvent and hydration base." },
-    { name: "milk", aliases: ["lait", "whole milk", "skim milk"], type: "good", category: "Whole Dairy", reason: "Natural source of complete protein (casein/whey), calcium, and minerals." },
-    { name: "egg", aliases: ["œuf", "oeuf", "liquid whole egg", "liquid whole egg and egg yolk", "egg yolk", "jaune d'œuf"], type: "good", category: "High Satiety", reason: "One of the highest satiety index whole foods; rich in bioavailable choline and leucine." },
-    { name: "tomato paste", aliases: ["pâte de tomates", "tomatoes", "puree de tomates"], type: "good", category: "Antioxidant", reason: "Concentrated source of lycopene; powerful antioxidant supporting cardiovascular and endothelial health." },
-    { name: "vinegar", aliases: ["vinaigre", "apple cider vinegar", "vinaigre de cidre"], type: "good", category: "Metabolic Support", reason: "Contains acetic acid, scientifically proven to attenuate postprandial glucose and insulin response." },
-    { name: "extra virgin olive oil", aliases: ["huile d'olive extra vierge", "olive oil", "huile d'olive"], type: "good", category: "Healthy Fat", reason: "Rich in oleic acid and anti-inflammatory polyphenols; supports insulin sensitivity." },
-    { name: "avocado oil", aliases: ["huile d'avocat"], type: "good", category: "Healthy Fat", reason: "Monounsaturated heart-healthy fat with high smoke point and minimal processing." },
-    { name: "cayenne pepper", aliases: ["piment de cayenne", "cayenne"], type: "good", category: "Thermogenic", reason: "Rich in capsaicin; stimulates mild metabolic thermogenesis and suppresses excessive appetite." },
-    { name: "red chili pepper", aliases: ["piment chili rouge", "chili pepper"], type: "good", category: "Thermogenic", reason: "Natural spice rich in capsaicinoids and vitamin C." },
-    { name: "garlic powder", aliases: ["poudre d'ail", "garlic", "ail"], type: "good", category: "Prebiotic / Herb", reason: "Natural allicin source supporting cardiovascular lipids and healthy gut microbiota." },
-    { name: "carrot fibre", aliases: ["fibre de carotte"], type: "good", category: "Dietary Fiber", reason: "Natural insoluble/soluble plant fiber promoting satiety and delayed gastric emptying." },
-    { name: "cocoa", aliases: ["cacao", "cocoa powder", "unsweetened chocolate", "chocolat non sucré"], type: "good", category: "Polyphenols", reason: "Flavanol-rich whole cocoa supporting nitric oxide production and metabolic sensitivity." },
-    { name: "annatto", aliases: ["rocou"], type: "good", category: "Natural Color", reason: "Wholesome plant-derived seed extract used for natural golden coloring." },
-    { name: "chia seeds", aliases: ["graines de chia"], type: "good", category: "Fiber / Omega-3", reason: "Outstanding source of mucilage fiber and alpha-linolenic acid (ALA)." },
-    { name: "flaxseed", aliases: ["graines de lin"], type: "good", category: "Fiber / Omega-3", reason: "High in dietary lignans and soluble fiber, blunting sugar absorption." },
-    { name: "psyllium husk", aliases: ["psyllium"], type: "good", category: "Soluble Fiber", reason: "Clinically proven to reduce visceral fat absorption and stabilize insulin levels." },
-    { name: "cinnamon", aliases: ["cannelle"], type: "good", category: "Insulin Support", reason: "Enhances insulin sensitivity and cellular glucose uptake." },
-    { name: "ginger", aliases: ["gingembre"], type: "good", category: "Anti-Inflammatory", reason: "Natural gingerols combat systemic inflammation and support digestive motility." }
-  ];
+  // 6. GOOD: WHOLE FOODS, BENEFICIAL EXTRACTS, NATURAL SATIETY
+  { name: "water", aliases: ["eau", "aqua"], type: "good", category: "Hydration", reason: "Essential zero-calorie clean solvent and hydration base." },
+  { name: "milk", aliases: ["lait", "whole milk", "skim milk"], type: "good", category: "Whole Dairy", reason: "Natural source of complete protein (casein/whey), calcium, and minerals." },
+  { name: "egg", aliases: ["œuf", "oeuf", "liquid whole egg", "liquid whole egg and egg yolk", "egg yolk", "jaune d'œuf"], type: "good", category: "High Satiety", reason: "One of the highest satiety index whole foods; rich in bioavailable choline and leucine." },
+  { name: "tomato paste", aliases: ["pâte de tomates", "tomatoes", "puree de tomates"], type: "good", category: "Antioxidant", reason: "Concentrated source of lycopene; powerful antioxidant supporting cardiovascular and endothelial health." },
+  { name: "vinegar", aliases: ["vinaigre", "apple cider vinegar", "vinaigre de cidre"], type: "good", category: "Metabolic Support", reason: "Contains acetic acid, scientifically proven to attenuate postprandial glucose and insulin response." },
+  { name: "extra virgin olive oil", aliases: ["huile d'olive extra vierge", "olive oil", "huile d'olive"], type: "good", category: "Healthy Fat", reason: "Rich in oleic acid and anti-inflammatory polyphenols; supports insulin sensitivity." },
+  { name: "avocado oil", aliases: ["huile d'avocat"], type: "good", category: "Healthy Fat", reason: "Monounsaturated heart-healthy fat with high smoke point and minimal processing." },
+  { name: "cayenne pepper", aliases: ["piment de cayenne", "cayenne"], type: "good", category: "Thermogenic", reason: "Rich in capsaicin; stimulates mild metabolic thermogenesis and suppresses excessive appetite." },
+  { name: "red chili pepper", aliases: ["piment chili rouge", "chili pepper"], type: "good", category: "Thermogenic", reason: "Natural spice rich in capsaicinoids and vitamin C." },
+  { name: "garlic powder", aliases: ["poudre d'ail", "garlic", "ail"], type: "good", category: "Prebiotic / Herb", reason: "Natural allicin source supporting cardiovascular lipids and healthy gut microbiota." },
+  { name: "carrot fibre", aliases: ["fibre de carotte"], type: "good", category: "Dietary Fiber", reason: "Natural insoluble/soluble plant fiber promoting satiety and delayed gastric emptying." },
+  { name: "cocoa", aliases: ["cacao", "cocoa powder", "unsweetened chocolate", "chocolat non sucré"], type: "good", category: "Polyphenols", reason: "Flavanol-rich whole cocoa supporting nitric oxide production and metabolic sensitivity." },
+  { name: "annatto", aliases: ["rocou"], type: "good", category: "Natural Color", reason: "Wholesome plant-derived seed extract used for natural golden coloring." },
+  { name: "chia seeds", aliases: ["graines de chia"], type: "good", category: "Fiber / Omega-3", reason: "Outstanding source of mucilage fiber and alpha-linolenic acid (ALA)." },
+  { name: "flaxseed", aliases: ["graines de lin"], type: "good", category: "Fiber / Omega-3", reason: "High in dietary lignans and soluble fiber, blunting sugar absorption." },
+  { name: "psyllium husk", aliases: ["psyllium"], type: "good", category: "Soluble Fiber", reason: "Clinically proven to reduce visceral fat absorption and stabilize insulin levels." },
+  { name: "cinnamon", aliases: ["cannelle"], type: "good", category: "Insulin Support", reason: "Enhances insulin sensitivity and cellular glucose uptake." },
+  { name: "ginger", aliases: ["gingembre"], type: "good", category: "Anti-Inflammatory", reason: "Natural gingerols combat systemic inflammation and support digestive motility." }
+];
 
-  // Sort rules so the longest phrase matches first (e.g., "modified palm oil" before "palm oil")
-  INGREDIENT_DATABASE.sort((a, b) => {
-    const maxLenA = Math.max(a.name.length, ...a.aliases.map(x => x.length));
-    const maxLenB = Math.max(b.name.length, ...b.aliases.map(x => x.length));
-    return maxLenB - maxLenA;
+// Longest phrase matches first (e.g., "modified palm oil" before "palm oil")
+INGREDIENT_DATABASE.sort((a, b) => {
+  const la = Math.max(a.name.length, ...a.aliases.map(x => x.length));
+  const lb = Math.max(b.name.length, ...b.aliases.map(x => x.length));
+  return lb - la;
+});
+
+const $ = id => document.getElementById(id);
+const TYPE_LABEL = { bad: 'Avoid', caution: 'Caution', good: 'Good' };
+let filesList = [];
+let ingFilter = 'all';
+let lastMatched = [];
+
+// ---------- Theme ----------
+$('themeBtn').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+});
+
+// ---------- Capture: separate camera and upload inputs ----------
+$('camBtn').addEventListener('click', () => $('camInput').click());
+$('libBtn').addEventListener('click', () => $('libInput').click());
+['camInput', 'libInput'].forEach(id => {
+  $(id).addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+});
+const drop = $('dropArea');
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+document.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+function addFiles(list) {
+  const imgs = Array.from(list || []).filter(f => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+  filesList = filesList.concat(imgs);
+  renderThumbs();
+}
+function renderThumbs() {
+  const box = $('thumbs');
+  box.innerHTML = '';
+  filesList.forEach((file, i) => {
+    const t = document.createElement('div'); t.className = 'thumb';
+    const img = document.createElement('img'); img.alt = 'Label photo ' + (i + 1); img.src = URL.createObjectURL(file);
+    const b = document.createElement('button'); b.type = 'button'; b.innerHTML = '&times;'; b.setAttribute('aria-label', 'Remove photo ' + (i + 1));
+    b.onclick = () => { filesList.splice(i, 1); renderThumbs(); };
+    t.append(img, b); box.appendChild(t);
   });
+  $('scanBtn').disabled = filesList.length === 0;
+}
 
-  // UI Event Handlers
-  let filesList = [];
-  const fileInput = document.getElementById('fileInput');
-  const thumbContainer = document.getElementById('thumbContainer');
-  const scanBtn = document.getElementById('scanBtn');
-  const progressBox = document.getElementById('progressBox');
-  const progressBar = document.getElementById('progressBar');
-  const progressText = document.getElementById('progressText');
-
-  fileInput.addEventListener('change', (e) => {
-    filesList = filesList.concat(Array.from(e.target.files));
-    renderThumbs();
-  });
-
-  function renderThumbs() {
-    thumbContainer.innerHTML = '';
-    filesList.forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'thumb-item';
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      const btn = document.createElement('button');
-      btn.className = 'thumb-remove';
-      btn.innerHTML = '&times;';
-      btn.onclick = (e) => { e.stopPropagation(); filesList.splice(index, 1); renderThumbs(); };
-      item.appendChild(img);
-      item.appendChild(btn);
-      thumbContainer.appendChild(item);
-    });
-    scanBtn.disabled = filesList.length === 0;
-  }
-
-  scanBtn.addEventListener('click', async () => {
-    if (filesList.length === 0) return;
-    scanBtn.disabled = true;
-    progressBox.style.display = 'block';
-    let combinedText = "";
-
-    try {
-      for (let i = 0; i < filesList.length; i++) {
-        const file = filesList[i];
-        progressText.innerText = `Scanning image ${i + 1} of ${filesList.length}...`;
-        const result = await Tesseract.recognize(file, 'eng+fra', {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              const overall = Math.round(((i + m.progress) / filesList.length) * 100);
-              progressBar.style.width = overall + '%';
-            }
-          }
-        });
-        combinedText += "\n" + result.data.text;
-      }
-
-      document.getElementById('rawText').value = combinedText;
-      parseNutritionalData(combinedText);
-      document.getElementById('reviewCard').style.display = 'block';
-      evaluateDashboard();
-    } catch (err) {
-      alert("Error scanning image: " + err.message);
-    } finally {
-      scanBtn.disabled = false;
-      progressBox.style.display = 'none';
-    }
-  });
-
-  document.getElementById('recalculateBtn').addEventListener('click', evaluateDashboard);
-
-  function toggleIngText() {
-    const el = document.getElementById('ingTextContainer');
-    const icon = document.getElementById('ingToggleIcon');
-    if (el.style.display === 'none') {
-      el.style.display = 'block';
-      icon.innerText = '▾';
-    } else {
-      el.style.display = 'none';
-      icon.innerText = '▸';
-    }
-  }
-
-  // Parse bilingual Canadian/US nutrition panels
-  function parseNutritionalData(text) {
-    const clean = text.replace(/,/g, '.');
-
-    const calMatch = clean.match(/Calories\s*[:]?\s*(\d+)/i);
-    if (calMatch) document.getElementById('inpCalories').value = calMatch[1];
-
-    const sugarMatch = clean.match(/(?:Sugars|Sucres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
-    if (sugarMatch) document.getElementById('inpSugar').value = sugarMatch[1];
-
-    const satMatch = clean.match(/(?:Saturates|Satur[ée]s)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
-    if (satMatch) document.getElementById('inpSatFat').value = satMatch[1];
-
-    const sodMatch = clean.match(/(?:Sodium)\s*[:]?\s*(\d+)\s*mg/i);
-    if (sodMatch) document.getElementById('inpSodium').value = sodMatch[1];
-
-    const protMatch = clean.match(/(?:Protein|Prot[ée]ines)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
-    if (protMatch) document.getElementById('inpProtein').value = protMatch[1];
-
-    const fibMatch = clean.match(/(?:Fibre|Fibres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i);
-    if (fibMatch) document.getElementById('inpFibre').value = fibMatch[1];
-  }
-
-  // Demo presets for test verification
-  function loadSample(type) {
-    document.getElementById('reviewCard').style.display = 'block';
-    if (type === 'icecream') {
-      document.getElementById('inpCalories').value = "290";
-      document.getElementById('inpSugar').value = "27";
-      document.getElementById('inpSatFat').value = "10";
-      document.getElementById('inpSodium').value = "60";
-      document.getElementById('inpProtein').value = "3";
-      document.getElementById('inpFibre').value = "1";
-      document.getElementById('rawText').value = "Élevé en Gras sat. Sucres. Ingredients: Cream, Milk, Sugars (sugar, glucose solids), Chocolatey fudge pieces (modified palm oil, sugar, cocoa, unsweetened chocolate, soy lecithin), Modified milk ingredients, Soy mono- and diglycerides, Cellulose gum, Guar gum, Polysorbate 80, Carrageenan, Natural flavour, Annatto.";
-    } else if (type === 'mayo') {
-      document.getElementById('inpCalories').value = "40";
-      document.getElementById('inpSugar').value = "1";
-      document.getElementById('inpSatFat').value = "0.3";
-      document.getElementById('inpSodium').value = "100";
-      document.getElementById('inpProtein').value = "0";
-      document.getElementById('inpFibre').value = "0";
-      document.getElementById('rawText').value = "Ingredients: Water, Canola oil, Vinegar, Sugar, Modified corn and potato starch, Cayenne pepper, Salt, Liquid whole egg and egg yolk, Concentrated lemon juice, Red chili pepper, Natural flavour, Carrot fibre, Sorbic acid, Garlic powder, Xanthan gum, Potassium sorbate, Calcium disodium EDTA.";
-    } else if (type === 'ketchup') {
-      document.getElementById('inpCalories').value = "20";
-      document.getElementById('inpSugar').value = "4";
-      document.getElementById('inpSatFat').value = "0";
-      document.getElementById('inpSodium').value = "160";
-      document.getElementById('inpProtein').value = "0.3";
-      document.getElementById('inpFibre').value = "0";
-      document.getElementById('rawText').value = "Ingredients: Tomato paste, Liquid sugar, Vinegar, Salt, Seasoning.";
-    }
-    evaluateDashboard();
-  }
-
-  // Core Evaluation Algorithm
-  function evaluateDashboard() {
-    const cal = parseFloat(document.getElementById('inpCalories').value) || 0;
-    const sugar = parseFloat(document.getElementById('inpSugar').value) || 0;
-    const satFat = parseFloat(document.getElementById('inpSatFat').value) || 0;
-    const sodium = parseFloat(document.getElementById('inpSodium').value) || 0;
-    const protein = parseFloat(document.getElementById('inpProtein').value) || 0;
-    const fibre = parseFloat(document.getElementById('inpFibre').value) || 0;
-    const text = document.getElementById('rawText').value.toLowerCase();
-
-    let score = 100;
-
-    // Macro Penalties for Weight Loss
-    if (sugar >= 20) score -= 36;
-    else if (sugar >= 10) score -= 22;
-    else if (sugar >= 4) score -= 10;
-
-    if (satFat >= 8) score -= 26;
-    else if (satFat >= 3) score -= 14;
-
-    if (cal >= 250) score -= 18;
-    else if (cal >= 100) score -= 8;
-
-    if (sodium >= 350) score -= 10;
-
-    // Bonuses
-    if (protein >= 8) score += 6;
-    if (fibre >= 3) score += 6;
-
-    // Match ingredients from expanded database
-    let matchedRules = [];
-    let gutDisrupted = false;
-    let matchedKeys = new Set();
-
-    INGREDIENT_DATABASE.forEach(rule => {
-      const allTerms = [rule.name, ...rule.aliases];
-      for (const term of allTerms) {
-        if (text.includes(term.toLowerCase()) && !matchedKeys.has(rule.name)) {
-          matchedKeys.add(rule.name);
-          matchedRules.push(rule);
-
-          if (rule.type === 'bad') {
-            score -= 14;
-            if (rule.category.includes("Emulsifier") || rule.category.includes("Gut")) {
-              gutDisrupted = true;
-            }
-          } else if (rule.type === 'caution') {
-            score -= 4;
-          }
-          break;
+// ---------- OCR ----------
+$('scanBtn').addEventListener('click', async () => {
+  if (!filesList.length) return;
+  const btn = $('scanBtn'); btn.disabled = true;
+  $('progress').style.display = 'block'; $('pbar').style.width = '0';
+  let combined = '';
+  try {
+    for (let i = 0; i < filesList.length; i++) {
+      $('ptext').textContent = `Reading photo ${i + 1} of ${filesList.length}…`;
+      const res = await Tesseract.recognize(filesList[i], 'eng+fra', {
+        logger: m => {
+          if (m.status === 'recognizing text') $('pbar').style.width = Math.round(((i + m.progress) / filesList.length) * 100) + '%';
         }
-      }
-    });
-
-    // Check for Official Warning Seal (Health Canada)
-    const hasOfficialWarning = text.includes("élevé en") || text.includes("high in");
-    if (hasOfficialWarning) {
-      score -= 15;
-    }
-
-    score = Math.max(8, Math.min(100, score));
-
-    renderUI(score, cal, sugar, satFat, sodium, protein, fibre, matchedRules, gutDisrupted, hasOfficialWarning);
-  }
-
-  function renderUI(score, cal, sugar, satFat, sodium, protein, fibre, matched, gutDisrupted, officialWarning) {
-    document.getElementById('resultsSection').style.display = 'block';
-
-    const scoreNum = document.getElementById('scoreNum');
-    const gradeLetter = document.getElementById('gradeLetter');
-    const circle = document.getElementById('gaugeCircle');
-    const verdictTitle = document.getElementById('verdictTitle');
-    const verdictSub = document.getElementById('verdictSubtitle');
-
-    scoreNum.innerText = score;
-    const offset = 314 - (314 * (score / 100));
-    circle.style.strokeDashoffset = offset;
-
-    let themeColor = 'var(--color-green)';
-    let grade = 'A';
-    let title = "Safe for Weight Loss";
-    let sub = "Nutrient-dense with minimal added sugars, healthy fats, and low ultra-processed additives.";
-
-    if (score < 40) {
-      themeColor = 'var(--color-red)';
-      grade = 'E';
-      title = "Avoid / High Weight-Gain Risk";
-      sub = "Dense in fast-absorbing sugars, saturated fats, or metabolic-disrupting emulsifiers. Highly detrimental during active weight loss.";
-    } else if (score < 70) {
-      themeColor = 'var(--color-amber)';
-      grade = score < 55 ? 'D' : 'C';
-      title = "Strict Portion Caution";
-      sub = "Calorie-dense or contains refined sweeteners/oils. Measure portions strictly to protect your deficit.";
-    } else if (score < 85) {
-      grade = 'B';
-      title = "Good / Moderate Choice";
-    }
-
-    circle.style.stroke = themeColor;
-    scoreNum.style.color = themeColor;
-    gradeLetter.innerText = `GRADE ${grade}`;
-    gradeLetter.style.color = themeColor;
-    verdictTitle.innerText = title;
-    verdictTitle.style.color = themeColor;
-    verdictSub.innerText = sub;
-
-    // Official Warning Alert
-    const alertEl = document.getElementById('officialAlert');
-    alertEl.style.display = officialWarning ? 'flex' : 'none';
-
-    // 4-Pillar Metric Tiles
-    renderTile('tileInsulin', 'valInsulin', 'descInsulin', 
-      sugar > 15 ? 'Critical' : (sugar > 4 ? 'Moderate' : 'Low'),
-      sugar > 15 ? 'Rapid glucose spike' : (sugar > 4 ? 'Mild insulin surge' : 'Stable blood sugar'),
-      sugar > 15 ? 'bad' : (sugar > 4 ? 'caution' : 'good')
-    );
-
-    renderTile('tileDensity', 'valDensity', 'descDensity',
-      cal > 200 ? 'High' : (cal > 80 ? 'Moderate' : 'Light'),
-      `${cal} kcal per serving`,
-      cal > 200 ? 'bad' : (cal > 80 ? 'caution' : 'good')
-    );
-
-    renderTile('tileGut', 'valGut', 'descGut',
-      gutDisrupted ? 'Disrupted' : 'Safe',
-      gutDisrupted ? 'Inflammatory emulsifiers found' : 'No barrier-disrupting additives',
-      gutDisrupted ? 'bad' : 'good'
-    );
-
-    const satietyHigh = (protein + fibre) >= 5;
-    renderTile('tileSatiety', 'valSatiety', 'descSatiety',
-      satietyHigh ? 'High Satiety' : 'Low Satiety',
-      `${protein}g Protein · ${fibre}g Fiber`,
-      satietyHigh ? 'good' : 'caution'
-    );
-
-    // Nutrient Traffic Light Sliders
-    setBar('Sugar', sugar, 25, 'g', 4, 12);
-    setBar('SatFat', satFat, 12, 'g', 2, 6);
-    setBar('Cal', cal, 350, ' kcal', 80, 200);
-    setBar('Sodium', sodium, 600, ' mg', 150, 350);
-
-    // Ingredient Breakdown Cards
-    const ingBox = document.getElementById('ingListContainer');
-    document.getElementById('detectedCount').innerText = `${matched.length} Detected`;
-    ingBox.innerHTML = '';
-    
-    if (matched.length === 0) {
-      ingBox.innerHTML = `<div style="text-align:center; padding:1.25rem; color:var(--text-muted); font-size:0.85rem;">No flagged additives detected. Clean baseline.</div>`;
-    } else {
-      matched.forEach(item => {
-        const div = document.createElement('div');
-        div.className = `ing-card ${item.type}`;
-        div.innerHTML = `
-          <div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <strong style="text-transform: capitalize;">${item.name}</strong>
-              <span style="font-size:0.7rem; color:var(--text-muted); background:#e2e8f0; padding:1px 6px; border-radius:4px;">${item.category}</span>
-            </div>
-            <p style="color:var(--text-muted); margin-top:3px; font-size:0.8rem;">${item.reason}</p>
-          </div>
-          <span class="ing-pill ${item.type}">${item.type}</span>
-        `;
-        ingBox.appendChild(div);
       });
+      combined += '\n' + res.data.text;
     }
+    $('rawText').value = combined;
+    parseNutritionalData(combined);
+    $('reviewCard').style.display = 'block';
+    evaluateDashboard();
+  } catch (err) {
+    alert('Could not read the image: ' + err.message);
+  } finally {
+    btn.disabled = filesList.length === 0;
+    $('progress').style.display = 'none';
+  }
+});
 
-    // Actionable Advice Box
-    const actTitle = document.getElementById('actionTitle');
-    const actBody = document.getElementById('actionBody');
+$('recalcBtn').addEventListener('click', evaluateDashboard);
+$('ingToggle').addEventListener('click', () => {
+  const box = $('ingBox'), open = box.style.display === 'none';
+  box.style.display = open ? 'block' : 'none';
+  $('ingIcon').textContent = open ? '▾' : '▸';
+  $('ingToggle').setAttribute('aria-expanded', open);
+});
 
-    if (score < 40) {
-      actTitle.innerText = "🚨 Weight-Loss Recommendation: Eliminate or Swap";
-      actBody.innerText = "This food combines high caloric density with rapid simple sugars or processed fats. It creates hunger rebounds within 1-2 hours while halting body fat burning. Choose whole Greek yogurt with berries or a zero-sugar alternative instead.";
-    } else if (score < 70) {
-      actTitle.innerText = "⚠️ Weight-Loss Recommendation: Strict Portion Measure";
-      actBody.innerText = "While not as detrimental as a dessert, this item carries hidden liquid sugars or calorie-dense seed oils. Never pour freely: measure strictly using a 1-tablespoon measure (do not eyeball) or switch to a no-added-sugar option.";
-    } else {
-      actTitle.innerText = "✅ Weight-Loss Recommendation: Diet Friendly";
-      actBody.innerText = "Fits easily into a healthy calorie deficit. High satiety signals and clean ingredients make it safe for your metabolic goals.";
+// Parse bilingual Canadian/US nutrition panels
+function parseNutritionalData(text) {
+  const clean = text.replace(/,/g, '.');
+  const set = (id, m) => { if (m) $(id).value = m[1]; };
+  set('inpCalories', clean.match(/Calories\s*[:]?\s*(\d+)/i));
+  set('inpSugar', clean.match(/(?:Sugars|Sucres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i));
+  set('inpSatFat', clean.match(/(?:Saturates|Satur[ée]s)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i));
+  set('inpSodium', clean.match(/(?:Sodium)\s*[:]?\s*(\d+)\s*mg/i));
+  set('inpProtein', clean.match(/(?:Protein|Prot[ée]ines)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i));
+  set('inpFibre', clean.match(/(?:Fibre|Fibres)\s*[:]?\s*(\d+(?:\.\d+)?)\s*g/i));
+}
+
+// Demo presets
+const SAMPLES = {
+  icecream: { name: 'Chocolate fudge ice cream', v: [290, 27, 10, 60, 3, 1], t: "Élevé en Gras sat. Sucres. Ingredients: Cream, Milk, Sugars (sugar, glucose solids), Chocolatey fudge pieces (modified palm oil, sugar, cocoa, unsweetened chocolate, soy lecithin), Modified milk ingredients, Soy mono- and diglycerides, Cellulose gum, Guar gum, Polysorbate 80, Carrageenan, Natural flavour, Annatto." },
+  mayo: { name: 'Spicy mayo', v: [40, 1, 0.3, 100, 0, 0], t: "Ingredients: Water, Canola oil, Vinegar, Sugar, Modified corn and potato starch, Cayenne pepper, Salt, Liquid whole egg and egg yolk, Concentrated lemon juice, Red chili pepper, Natural flavour, Carrot fibre, Sorbic acid, Garlic powder, Xanthan gum, Potassium sorbate, Calcium disodium EDTA." },
+  ketchup: { name: 'Tomato ketchup', v: [20, 4, 0, 160, 0.3, 0], t: "Ingredients: Tomato paste, Liquid sugar, Vinegar, Salt, Seasoning." }
+};
+function loadSample(key) {
+  const s = SAMPLES[key];
+  ['inpCalories', 'inpSugar', 'inpSatFat', 'inpSodium', 'inpProtein', 'inpFibre'].forEach((id, i) => $(id).value = s.v[i]);
+  $('rawText').value = s.t; $('productName').value = s.name;
+  $('reviewCard').style.display = 'block';
+  evaluateDashboard();
+}
+
+// ---------- Scoring (same rules as before, now with a ledger) ----------
+function evaluateDashboard() {
+  const n = id => parseFloat($(id).value) || 0;
+  const cal = n('inpCalories'), sugar = n('inpSugar'), satFat = n('inpSatFat'),
+        sodium = n('inpSodium'), protein = n('inpProtein'), fibre = n('inpFibre');
+  const text = $('rawText').value.toLowerCase();
+  const ledger = []; // {label, note, pts}
+  let score = 100;
+  const add = (label, note, pts) => { score += pts; ledger.push({ label, note, pts }); };
+
+  if (sugar >= 20) add('Sugars', `${sugar} g per serving (20 g or more)`, -36);
+  else if (sugar >= 10) add('Sugars', `${sugar} g per serving (10 to 19 g)`, -22);
+  else if (sugar >= 4) add('Sugars', `${sugar} g per serving (4 to 9 g)`, -10);
+
+  if (satFat >= 8) add('Saturated fat', `${satFat} g per serving (8 g or more)`, -26);
+  else if (satFat >= 3) add('Saturated fat', `${satFat} g per serving (3 to 7 g)`, -14);
+
+  if (cal >= 250) add('Calories', `${cal} kcal per serving (250 or more)`, -18);
+  else if (cal >= 100) add('Calories', `${cal} kcal per serving (100 to 249)`, -8);
+
+  if (sodium >= 350) add('Sodium', `${sodium} mg per serving (350 mg or more)`, -10);
+  if (protein >= 8) add('Protein bonus', `${protein} g per serving`, 6);
+  if (fibre >= 3) add('Fibre bonus', `${fibre} g per serving`, 6);
+
+  const matched = []; const seen = new Set(); let gutDisrupted = false;
+  INGREDIENT_DATABASE.forEach(rule => {
+    for (const term of [rule.name, ...rule.aliases]) {
+      if (text.includes(term.toLowerCase()) && !seen.has(rule.name)) {
+        seen.add(rule.name); matched.push(rule);
+        if (rule.type === 'bad' && (rule.category.includes('Emulsifier') || rule.category.includes('Gut'))) gutDisrupted = true;
+        break;
+      }
     }
+  });
+  const bad = matched.filter(m => m.type === 'bad'), caution = matched.filter(m => m.type === 'caution'), good = matched.filter(m => m.type === 'good');
+  if (bad.length) add('Harmful additives', `${bad.length} found × 14 points`, -14 * bad.length);
+  if (caution.length) add('Cautionary ingredients', `${caution.length} found × 4 points`, -4 * caution.length);
 
-    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+  const official = text.includes('élevé en') || text.includes('high in');
+  if (official) add('Health Canada warning symbol', 'High in saturated fat and/or sugars', -15);
+
+  const raw = score;
+  score = Math.max(8, Math.min(100, score));
+  lastMatched = matched;
+  renderUI({ score, raw, cal, sugar, satFat, sodium, protein, fibre, matched, bad, caution, good, gutDisrupted, official, ledger });
+}
+
+function gradeInfo(score) {
+  if (score < 40) return { color: 'var(--bad)', g: 'E', title: 'Avoid: high weight-gain risk', sub: 'Dense in fast-absorbing sugars, saturated fats, or metabolic-disrupting emulsifiers. Highly detrimental during active weight loss.' };
+  if (score < 70) return { color: 'var(--warn)', g: score < 55 ? 'D' : 'C', title: 'Strict portion caution', sub: 'Calorie-dense or contains refined sweeteners and oils. Measure portions strictly to protect your deficit.' };
+  if (score < 85) return { color: 'var(--good)', g: 'B', title: 'Good, moderate choice', sub: 'Mostly sound nutrition with a few minor flags. Fits a calorie deficit in sensible portions.' };
+  return { color: 'var(--good)', g: 'A', title: 'Safe for weight loss', sub: 'Nutrient-dense with minimal added sugars, healthy fats, and low ultra-processed additives.' };
+}
+
+function renderUI(d) {
+  const { score, cal, sugar, satFat, sodium, protein, fibre, matched, bad, caution, good, gutDisrupted, official, ledger } = d;
+  $('results').style.display = 'block';
+  const gi = gradeInfo(score);
+  const name = $('productName').value.trim() || 'This product';
+
+  $('scoreNum').textContent = score;
+  $('gaugeCircle').style.strokeDashoffset = 314 - 314 * (score / 100);
+  $('gaugeCircle').style.stroke = gi.color;
+  $('scoreNum').style.color = gi.color;
+  $('gradeLetter').textContent = 'GRADE ' + gi.g; $('gradeLetter').style.color = gi.color;
+  $('pName').textContent = $('productName').value.trim();
+  $('verdictTitle').textContent = gi.title; $('verdictTitle').style.color = gi.color;
+  $('verdictSub').textContent = gi.sub;
+  $('marker').style.left = `calc(${score}% - 2px)`;
+  $('fop').style.display = official ? 'flex' : 'none';
+
+  // Tiles
+  tile('Insulin', sugar > 15 ? 'Critical' : sugar > 4 ? 'Moderate' : 'Low',
+    sugar > 15 ? 'Rapid glucose spike' : sugar > 4 ? 'Mild insulin surge' : 'Stable blood sugar',
+    sugar > 15 ? 'bad' : sugar > 4 ? 'caution' : 'good');
+  tile('Density', cal > 200 ? 'High' : cal > 80 ? 'Moderate' : 'Light', `${cal} kcal per serving`,
+    cal > 200 ? 'bad' : cal > 80 ? 'caution' : 'good');
+  tile('Gut', gutDisrupted ? 'Disrupted' : 'Safe', gutDisrupted ? 'Inflammatory emulsifiers found' : 'No barrier-disrupting additives', gutDisrupted ? 'bad' : 'good');
+  const sat = (protein + fibre) >= 5;
+  tile('Satiety', sat ? 'High satiety' : 'Low satiety', `${protein} g protein, ${fibre} g fibre`, sat ? 'good' : 'caution');
+
+  renderReport({ name, score, gi, cal, sugar, satFat, sodium, protein, fibre, bad, caution, good, gutDisrupted, official, matched });
+  renderLossChart(ledger);
+  renderDailyChart({ sugar, satFat, sodium, cal, protein, fibre });
+  renderLimits({ sugar, satFat, cal, sodium });
+  renderLedger(ledger, d.raw, score);
+  renderIngredients(matched);
+
+  // Advice
+  if (score < 40) {
+    $('actionTitle').textContent = 'Recommendation: eliminate or swap';
+    $('actionBody').textContent = 'This food combines high caloric density with rapid simple sugars or processed fats. It tends to cause hunger rebounds within 1-2 hours while suppressing fat burning. Choose whole Greek yogurt with berries or a zero-sugar alternative instead.';
+  } else if (score < 70) {
+    $('actionTitle').textContent = 'Recommendation: measure strictly';
+    $('actionBody').textContent = 'This item carries hidden liquid sugars or calorie-dense seed oils. Never pour freely: measure with a 1-tablespoon measure (do not eyeball) or switch to a no-added-sugar option.';
+  } else {
+    $('actionTitle').textContent = 'Recommendation: diet friendly';
+    $('actionBody').textContent = 'Fits easily into a healthy calorie deficit. Strong satiety signals and clean ingredients make it a safe choice for your metabolic goals.';
   }
+  $('results').scrollIntoView({ behavior: 'smooth' });
+}
 
-  function renderTile(tileId, valId, descId, val, desc, status) {
-    const tile = document.getElementById(tileId);
-    tile.className = `metric-tile status-${status}`;
-    document.getElementById(valId).innerText = val;
-    document.getElementById(descId).innerText = desc;
-  }
+function tile(key, val, desc, status) {
+  $('tile' + key).className = 'tile ' + status;
+  $('val' + key).textContent = val; $('desc' + key).textContent = desc;
+}
 
-  function setBar(id, val, max, unit, lowCut, highCut) {
-    document.getElementById(`txt${id}`).innerText = val;
-    const badge = document.getElementById(`badge${id}`);
-    const fill = document.getElementById(`bar${id}`);
+// ---------- Detailed report ----------
+function renderReport(r) {
+  const { name, score, gi, cal, sugar, satFat, sodium, protein, fibre, bad, caution, good, gutDisrupted, official, matched } = r;
+  const pct = (v, ref) => Math.round(v / ref * 100);
+  $('repOverview').textContent = `${name} scores ${score} out of 100 and earns a grade ${gi.g} for weight loss. ${gi.sub}`;
 
-    const pct = Math.min(100, Math.round((val / max) * 100));
-    fill.style.width = pct + '%';
+  const sugarTxt = sugar >= 20 ? `${sugar} g of sugars is very high, about ${pct(sugar, 50)}% of a 50 g daily limit in one serving`
+    : sugar >= 10 ? `${sugar} g of sugars is moderately high (${pct(sugar, 50)}% of a 50 g daily limit)`
+    : sugar >= 4 ? `${sugar} g of sugars is modest but worth tracking`
+    : `sugars are low at ${sugar} g`;
+  const fatTxt = satFat >= 8 ? `saturated fat is high at ${satFat} g (${pct(satFat, 20)}% of a daily 20 g)`
+    : satFat >= 3 ? `saturated fat is moderate at ${satFat} g` : `saturated fat is low at ${satFat} g`;
+  const calTxt = cal >= 250 ? `${cal} kcal makes it calorie-dense` : cal >= 100 ? `${cal} kcal is a moderate load` : `${cal} kcal is light`;
+  const sodTxt = sodium >= 350 ? `sodium is high at ${sodium} mg` : `sodium is acceptable at ${sodium} mg`;
+  const satietyTxt = (protein + fibre) >= 5 ? `With ${protein} g protein and ${fibre} g fibre it should keep you reasonably full.`
+    : `With only ${protein} g protein and ${fibre} g fibre it offers little fullness, so hunger may return quickly.`;
+  $('repNutrition').textContent = `Per serving, ${sugarTxt}; ${fatTxt}; ${calTxt}; and ${sodTxt}. ${satietyTxt}`;
 
-    if (val >= highCut) {
-      fill.style.background = 'var(--color-red)';
-      badge.style.color = 'var(--color-red)';
-      badge.innerText = 'High';
-    } else if (val >= lowCut) {
-      fill.style.background = 'var(--color-amber)';
-      badge.style.color = 'var(--color-amber)';
-      badge.innerText = 'Moderate';
-    } else {
-      fill.style.background = 'var(--color-green)';
-      badge.style.color = 'var(--color-green)';
-      badge.innerText = 'Low / Clean';
-    }
-  }
+  let ing = `We recognised ${matched.length} ingredient${matched.length === 1 ? '' : 's'}: ${bad.length} to avoid, ${caution.length} to watch, and ${good.length} beneficial.`;
+  if (bad.length) ing += ` The most concerning: ${bad.slice(0, 4).map(b => b.name).join(', ')}.`;
+  if (gutDisrupted) ing += ' Several are emulsifiers linked to gut-barrier disruption and low-grade inflammation.';
+  if (official) ing += ' The package also carries an official Health Canada high-in warning.';
+  if (!matched.length) ing = 'No known ingredients were matched. Open the ingredient text above to check that the scan captured the full list.';
+  $('repIngredients').textContent = ing;
+
+  const pos = [], neg = [];
+  if (sugar < 4) pos.push('Low in sugars'); if (satFat < 3) pos.push('Low in saturated fat');
+  if (cal < 100) pos.push('Light on calories'); if (sodium < 150) pos.push('Low sodium');
+  if (protein >= 8) pos.push(`Good protein (${protein} g)`); if (fibre >= 3) pos.push(`Good fibre (${fibre} g)`);
+  good.slice(0, 4).forEach(g => pos.push(`${cap(g.name)}: ${g.category.toLowerCase()}`));
+  if (sugar >= 10) neg.push(`High sugars (${sugar} g)`); if (satFat >= 3) neg.push(`Saturated fat ${satFat} g`);
+  if (cal >= 250) neg.push(`Calorie-dense (${cal} kcal)`); if (sodium >= 350) neg.push(`High sodium (${sodium} mg)`);
+  if (official) neg.push('Official high-in warning on pack');
+  bad.slice(0, 5).forEach(b => neg.push(`${cap(b.name)}: ${b.category.toLowerCase()}`));
+  if (caution.length) neg.push(`${caution.length} cautionary ingredient${caution.length > 1 ? 's' : ''}`);
+  fillList('listPos', pos, 'Nothing stands out yet.'); fillList('listNeg', neg, 'No major concerns found.');
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function fillList(id, items, empty) {
+  const ul = $(id); ul.innerHTML = '';
+  (items.length ? items : [empty]).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+}
+
+// ---------- Vertical bar charts ----------
+function barChart(host, items, max) {
+  host.innerHTML = '';
+  if (!items.length) { host.innerHTML = '<div class="empty">Nothing to chart for this product.</div>'; return; }
+  const chart = document.createElement('div'); chart.className = 'chart';
+  const labels = document.createElement('div'); labels.className = 'labels';
+  items.forEach(it => {
+    const col = document.createElement('div'); col.className = 'col';
+    const v = document.createElement('div'); v.className = 'val'; v.textContent = it.display;
+    const s = document.createElement('div'); s.className = 'stick'; s.style.background = it.color;
+    col.append(v, s); chart.appendChild(col);
+    const l = document.createElement('span'); l.textContent = it.label; labels.appendChild(l);
+    requestAnimationFrame(() => requestAnimationFrame(() => { s.style.height = Math.max(3, Math.min(100, it.value / max * 100)) * 0.82 + '%'; }));
+  });
+  host.append(chart, labels);
+}
+function renderLossChart(ledger) {
+  const losses = ledger.filter(l => l.pts < 0).map(l => ({ label: l.label, value: -l.pts, display: '−' + (-l.pts), color: 'var(--bad)' }))
+    .sort((a, b) => b.value - a.value).slice(0, 5);
+  losses.forEach((l, i) => l.color = i < 2 ? 'var(--bad)' : 'var(--warn)');
+  barChart($('chartLoss'), losses, Math.max(36, ...losses.map(l => l.value)));
+}
+function renderDailyChart(v) {
+  const refs = [['Sugars', v.sugar, 50, true], ['Sat fat', v.satFat, 20, true], ['Sodium', v.sodium, 2300, true], ['Calories', v.cal, 2000, true], ['Protein', v.protein, 50, false], ['Fibre', v.fibre, 28, false]];
+  const items = refs.map(([label, val, ref, limit]) => {
+    const p = val / ref * 100;
+    return { label, value: p, display: Math.round(p) + '%', color: !limit ? 'var(--brand)' : p >= 25 ? 'var(--bad)' : p >= 10 ? 'var(--warn)' : 'var(--good)' };
+  });
+  barChart($('chartDaily'), items, Math.max(40, ...items.map(i => i.value)));
+}
+
+// ---------- Limits, ledger, ingredients ----------
+function renderLimits(v) {
+  const rows = [['Sugars', v.sugar, 25, 'g', 4, 12], ['Saturated fat', v.satFat, 12, 'g', 2, 6], ['Calories', v.cal, 350, ' kcal', 80, 200], ['Sodium', v.sodium, 600, ' mg', 150, 350]];
+  $('limits').innerHTML = '';
+  rows.forEach(([label, val, max, unit, lo, hi]) => {
+    const c = val >= hi ? 'var(--bad)' : val >= lo ? 'var(--warn)' : 'var(--good)';
+    const t = val >= hi ? 'High' : val >= lo ? 'Moderate' : 'Low';
+    const div = document.createElement('div'); div.className = 'limit';
+    div.innerHTML = `<div class="limit-h"><span>${label} (${val}${unit})</span><span style="color:${c}">${t}</span></div><div class="track"><div class="fill" style="width:${Math.min(100, Math.round(val / max * 100))}%;background:${c}"></div></div>`;
+    $('limits').appendChild(div);
+  });
+}
+function renderLedger(ledger, raw, final) {
+  const box = $('ledger'); box.innerHTML = '';
+  const mk = (label, note, ptsText, cls) => {
+    const r = document.createElement('div'); r.className = 'row' + (cls === 'total' ? ' total' : '');
+    r.innerHTML = `<div>${label}${note ? `<small>${note}</small>` : ''}</div><div class="pts ${cls}">${ptsText}</div>`;
+    box.appendChild(r);
+  };
+  mk('Starting score', 'Every product begins at 100', '100', '');
+  ledger.forEach(l => mk(l.label, l.note, (l.pts > 0 ? '+' : '−') + Math.abs(l.pts), l.pts > 0 ? 'pos' : 'neg'));
+  if (!ledger.length) mk('No deductions', 'Nothing flagged', '0', '');
+  if (raw !== final) mk('Adjusted to scale limits', 'Scores are kept between 8 and 100', final, '');
+  mk('Final score', '', final + ' / 100', 'total');
+}
+function renderIngredients(matched) {
+  const counts = { bad: 0, caution: 0, good: 0 }; matched.forEach(m => counts[m.type]++);
+  $('detectedCount').textContent = `${matched.length} detected`;
+  $('mix').innerHTML = matched.length ? ['bad', 'caution', 'good'].map(t => `<i style="flex:${counts[t]};background:var(--${t === 'caution' ? 'warn' : t})"></i>`).join('') : '';
+  const tabs = $('tabs'); tabs.innerHTML = '';
+  [['all', 'All', matched.length], ['bad', 'Avoid', counts.bad], ['caution', 'Caution', counts.caution], ['good', 'Good', counts.good]].forEach(([k, l, c]) => {
+    const b = document.createElement('button'); b.className = 'tab'; b.type = 'button'; b.textContent = `${l} (${c})`;
+    b.setAttribute('aria-pressed', ingFilter === k);
+    b.onclick = () => { ingFilter = k; renderIngredients(lastMatched); };
+    tabs.appendChild(b);
+  });
+  const box = $('ingList'); box.innerHTML = '';
+  const shown = matched.filter(m => ingFilter === 'all' || m.type === ingFilter);
+  if (!shown.length) { box.innerHTML = '<div class="empty">No ingredients in this group. Clean baseline.</div>'; return; }
+  ['bad', 'caution', 'good'].forEach(t => shown.filter(m => m.type === t).forEach(m => {
+    const d = document.createElement('div'); d.className = 'ing ' + m.type;
+    d.innerHTML = `<div><strong>${m.name}</strong><span class="cat">${m.category}</span><p>${m.reason}</p></div><span class="pill ${m.type}">${TYPE_LABEL[m.type]}</span>`;
+    box.appendChild(d);
+  }));
+}
 </script>
 </body>
 </html>
